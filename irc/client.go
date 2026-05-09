@@ -16,13 +16,16 @@ type Message struct {
 	Trailing string
 }
 
-func Dial(server string, port int, useTLS bool) (net.Conn, error) {
+func Dial(server string, port int, useTLS, selfSigned bool) (net.Conn, error) {
 	addr := fmt.Sprintf("[%s]:%d", server, port)
 	if server[0] != '[' && !containsColon(server) {
 		addr = fmt.Sprintf("%s:%d", server, port)
 	}
 	if useTLS {
-		return tls.Dial("tcp", addr, &tls.Config{ServerName: server})
+		return tls.Dial("tcp", addr, &tls.Config{
+			ServerName:         server,
+			InsecureSkipVerify: selfSigned,
+		})
 	}
 	return net.Dial("tcp", addr)
 }

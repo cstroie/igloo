@@ -19,8 +19,9 @@ type inMsg struct {
 	Server  string `json:"server"`
 	Port    int    `json:"port"`
 	Nick    string `json:"nick"`
-	TLS     bool   `json:"tls"`
-	Pass    string `json:"pass"`
+	TLS        bool   `json:"tls"`
+	SelfSigned bool   `json:"selfsigned"`
+	Pass       string `json:"pass"`
 	NSPass  string `json:"nspass"`
 	Channel string `json:"channel"`
 	Target  string `json:"target"`
@@ -87,7 +88,7 @@ func dispatch(s *session.Session, msg inMsg) error {
 				msg.Port = 6667
 			}
 		}
-		return s.Connect(msg.Server, msg.Port, msg.Nick, msg.TLS, msg.Pass, msg.NSPass)
+		return s.Connect(msg.Server, msg.Port, msg.Nick, msg.TLS, msg.SelfSigned, msg.Pass, msg.NSPass)
 	case "join":
 		return s.SendIRC("JOIN " + msg.Channel)
 	case "part":

@@ -85,9 +85,9 @@ func (r *Registry) Remove(id string) {
 	r.mu.Unlock()
 }
 
-func (s *Session) Connect(server string, port int, nick string, useTLS bool, pass, nspass string) error {
-	logger.L.Info("connecting to IRC", "session", s.ID, "server", server, "port", port, "nick", nick, "tls", useTLS)
-	conn, err := irc.Dial(server, port, useTLS)
+func (s *Session) Connect(server string, port int, nick string, useTLS, selfSigned bool, pass, nspass string) error {
+	logger.L.Info("connecting to IRC", "session", s.ID, "server", server, "port", port, "nick", nick, "tls", useTLS, "selfsigned", selfSigned)
+	conn, err := irc.Dial(server, port, useTLS, selfSigned)
 	if err != nil {
 		logger.L.Error("IRC dial failed", "session", s.ID, "server", server, "err", err)
 		return err
