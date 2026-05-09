@@ -5,10 +5,13 @@ const state = {
   ws: null,
   nick: '',
   connected: false,
+  sessionId: null,
   // Map<target, {messages: [], nicks: Set, unread: number, mention: boolean}>
   channels: new Map(),
   active: null,
 };
+
+let reconnectDelay = 1000;
 
 // ── DOM refs ─────────────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
@@ -59,11 +62,10 @@ function openWS(server, port, nick, tls) {
     try { handle(JSON.parse(e.data)); } catch {}
   };
 
-  ws.onerror = () => {
-    if (!state.connected) onConnectFailed('WebSocket error');
-  };
+  ws.onerror = () => {};
   ws.onclose = () => {
-    if (state.connected) onDisconnect('Connection lost');
+    if (state.sessionId) scheduleReconnect();
+    else if (state.connected) onDisconnect('Connection lost');
     else onConnectFailed('Connection closed');
   };
 }
@@ -73,9 +75,17 @@ function handle(msg) {
   switch (msg.type) {
     case 'connected':
       state.connected = true;
+      state.sessionId = msg.session;
       state.nick = msg.nick;
+      reconnectDelay = 1000;
       myNick.textContent = msg.nick;
       appendMsg('*server*', { type: 'system', nick: '--', text: `Connected as ${msg.nick}` });
+      break;
+
+    case 'resumed':
+      state.connected = true;
+      reconnectDelay = 1000;
+      appendMsg('*server*', { type: 'system', nick: '--', text: 'Reconnected' });
       break;
 
     case 'message': {
@@ -344,6 +354,7 @@ $('nick-btn').addEventListener('click', () => {
 });
 
 $('disconnect-btn').addEventListener('click', () => {
+  state.sessionId = null;
   send({ type: 'raw', line: 'QUIT :bye' });
   state.ws?.close();
   onDisconnect('Disconnected');
@@ -354,6 +365,22 @@ function send(obj) {
   if (state.ws && state.ws.readyState === WebSocket.OPEN) {
     state.ws.send(JSON.stringify(obj));
   }
+}
+
+function scheduleReconnect() {
+  const secs = Math.round(reconnectDelay / 1000);
+  appendMsg('*server*', { type: 'connecting', nick: '--', text: `Connection lost — reconnecting in ${secs}s…` });
+  setTimeout(() => {
+    if (!state.sessionId) return;
+    appendMsg('*server*', { type: 'connecting', nick: '--', text: 'Reconnecting…' });
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    const ws = new WebSocket(`${proto}://${location.host}/ws?session=${state.sessionId}`);
+    state.ws = ws;
+    ws.onmessage = e => { try { handle(JSON.parse(e.data)); } catch {} };
+    ws.onerror = () => {};
+    ws.onclose = () => { if (state.sessionId) scheduleReconnect(); };
+  }, reconnectDelay);
+  reconnectDelay = Math.min(reconnectDelay * 2, 30000);
 }
 
 function onConnectFailed(reason) {
@@ -367,6 +394,7 @@ function onConnectFailed(reason) {
 
 function onDisconnect(reason) {
   state.connected = false;
+  state.sessionId = null;
   state.channels.clear();
   state.active = null;
   chatScreen.classList.add('hidden');

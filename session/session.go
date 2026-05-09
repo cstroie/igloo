@@ -15,6 +15,8 @@ import (
 	"igloo/logger"
 )
 
+const wsReconnectWindow = 60 * time.Second
+
 type Session struct {
 	ID   string
 	Nick string
@@ -40,6 +42,40 @@ func (r *Registry) New(ws *websocket.Conn) *Session {
 	r.sessions[id] = s
 	r.mu.Unlock()
 	return s
+}
+
+// Resume attaches ws to an existing session, cancelling any pending cleanup.
+// Returns nil if the session doesn't exist.
+func (r *Registry) Resume(id string, ws *websocket.Conn) *Session {
+	r.mu.RLock()
+	s := r.sessions[id]
+	r.mu.RUnlock()
+	if s == nil {
+		return nil
+	}
+	s.mu.Lock()
+	s.ws = ws
+	s.mu.Unlock()
+	return s
+}
+
+// Detach marks the WebSocket as gone and schedules session cleanup after
+// wsReconnectWindow unless the client reconnects first.
+func (r *Registry) Detach(s *Session) {
+	s.mu.Lock()
+	s.ws = nil
+	s.mu.Unlock()
+
+	time.AfterFunc(wsReconnectWindow, func() {
+		s.mu.Lock()
+		wsGone := s.ws == nil
+		s.mu.Unlock()
+		if wsGone {
+			logger.L.Info("session expired", "session", s.ID)
+			s.Close()
+			r.Remove(s.ID)
+		}
+	})
 }
 
 func (r *Registry) Remove(id string) {
@@ -72,6 +108,10 @@ func (s *Session) Connect(server string, port int, nick string, useTLS bool) err
 	return nil
 }
 
+func (s *Session) SendResumed() {
+	s.sendWS(map[string]any{"type": "resumed", "nick": s.Nick})
+}
+
 func (s *Session) ircLoop(lines <-chan string) {
 	for line := range lines {
 		msg := irc.ParseLine(line)
@@ -81,7 +121,7 @@ func (s *Session) ircLoop(lines <-chan string) {
 
 		case "001":
 			logger.L.Info("IRC connected", "session", s.ID, "nick", s.Nick)
-			s.sendWS(map[string]any{"type": "connected", "nick": s.Nick})
+			s.sendWS(map[string]any{"type": "connected", "nick": s.Nick, "session": s.ID})
 
 		case "PRIVMSG":
 			if len(msg.Params) < 2 {
@@ -181,6 +221,9 @@ func (s *Session) sendWS(v any) {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if s.ws == nil {
+		return
+	}
 	s.ws.WriteMessage(websocket.TextMessage, data)
 }
 

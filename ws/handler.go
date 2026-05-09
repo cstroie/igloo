@@ -34,12 +34,21 @@ func Handler(reg *session.Registry) http.HandlerFunc {
 			return
 		}
 
-		s := reg.New(conn)
-		logger.L.Info("client connected", "session", s.ID, "remote", r.RemoteAddr)
+		var s *session.Session
+		if id := r.URL.Query().Get("session"); id != "" {
+			s = reg.Resume(id, conn)
+			if s != nil {
+				logger.L.Info("client resumed", "session", s.ID, "remote", r.RemoteAddr)
+				s.SendResumed()
+			}
+		}
+		if s == nil {
+			s = reg.New(conn)
+			logger.L.Info("client connected", "session", s.ID, "remote", r.RemoteAddr)
+		}
 
 		defer func() {
-			s.Close()
-			reg.Remove(s.ID)
+			reg.Detach(s)
 			conn.Close()
 			logger.L.Info("client disconnected", "session", s.ID, "nick", s.Nick)
 		}()
