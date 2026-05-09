@@ -13,12 +13,31 @@ The server proxies IRC over a WebSocket so you can connect from any browser. A s
 
 ## Build & install
 
+Requires Go 1.21+.
+
 ```sh
-make          # build ./igloo
-make install  # install to /usr/local/bin (override with PREFIX=...)
+make                   # build ./igloo
+make install           # install binary to /usr/local/bin
+make install-service   # install binary + systemd unit, reload systemd
 ```
 
-Requires Go 1.21+.
+`PREFIX` and `SYSTEMD_DIR` can be overridden:
+
+```sh
+make install-service PREFIX=/opt/igloo SYSTEMD_DIR=/etc/systemd/system
+```
+
+After `install-service`, enable and start the service:
+
+```sh
+systemctl enable --now igloo
+```
+
+To remove:
+
+```sh
+make uninstall         # stop service, remove unit and binary
+```
 
 ## Usage
 
