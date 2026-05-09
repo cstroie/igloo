@@ -19,7 +19,7 @@
 - [ ] Handle MODE — show mode changes as a system message in the channel
 - [ ] Browser notifications for mentions (Notification API)
 - [x] /topic command
-- [ ] /whois, /away commands
+- [x] /whois, /away commands
 - [x] /list command
 - [ ] Outgoing message rate limiting (avoid flood-kick)
 
