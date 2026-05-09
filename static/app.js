@@ -161,6 +161,15 @@ function handle(msg) {
       renderUserlist();
       break;
 
+    case 'topic': {
+      const ch = state.channels.get(msg.channel);
+      if (ch) {
+        ch.topic = msg.text;
+        if (msg.channel === state.active) topicText.textContent = msg.text;
+      }
+      break;
+    }
+
     case 'names': {
       const ch = state.channels.get(msg.channel);
       if (ch) {
@@ -184,7 +193,7 @@ function handle(msg) {
 // ── Channels ──────────────────────────────────────────────────────────────────
 function ensureChannel(target) {
   if (!state.channels.has(target)) {
-    state.channels.set(target, { messages: [], nicks: new Set(), unread: 0, mention: false });
+    state.channels.set(target, { messages: [], nicks: new Set(), unread: 0, mention: false, topic: '' });
     renderChannelList();
   }
 }
@@ -208,6 +217,7 @@ function setActive(target) {
   renderMessages(target);
   renderUserlist();
   targetName.textContent = target;
+  topicText.textContent = ch.topic || '';
   input.focus();
 }
 
@@ -343,6 +353,9 @@ function handleCommand(raw) {
         send({ type: 'message', target: state.active, text: `\x01ACTION ${arg}\x01` });
         appendMsg(state.active, { type: 'me', nick: state.nick, text: `/me ${arg}`, ts: Date.now() / 1000 });
       }
+      break;
+    case 'TOPIC':
+      send({ type: 'raw', line: `TOPIC ${state.active}${arg ? ' :' + arg : ''}` });
       break;
     case 'QUOTE':
     case 'RAW':

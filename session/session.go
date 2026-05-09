@@ -167,6 +167,14 @@ func (s *Session) ircLoop(lines <-chan string) {
 			logger.L.Info("NICK", "session", s.ID, "old", msg.Nick, "new", newNick)
 			s.sendWS(map[string]any{"type": "nick", "old": msg.Nick, "new": newNick})
 
+		case "332":
+			if len(msg.Params) < 2 {
+				continue
+			}
+			channel := msg.Params[1]
+			logger.L.Debug("TOPIC", "session", s.ID, "channel", channel)
+			s.sendWS(map[string]any{"type": "topic", "channel": channel, "text": msg.Trailing})
+
 		case "353":
 			if len(msg.Params) < 3 {
 				continue
