@@ -91,6 +91,9 @@ function handle(msg) {
       state.connected = true;
       reconnectDelay = 1000;
       appendMsg('*server*', { type: 'system', nick: '--', text: 'Reconnected' });
+      state.channels.forEach((_, target) => {
+        if (target.startsWith('#')) send({ type: 'join', channel: target });
+      });
       break;
 
     case 'session_expired':
