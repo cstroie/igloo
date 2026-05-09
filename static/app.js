@@ -143,6 +143,13 @@ function handle(msg) {
       }
       break;
 
+    case 'mode': {
+      const dest = msg.target.startsWith('#') ? msg.target : '*server*';
+      const setter = msg.nick || msg.target;
+      appendMsg(dest, { type: 'system', nick: '', text: `${setter} sets mode ${msg.mode}` });
+      break;
+    }
+
     case 'invite':
       appendMsg('*server*', { type: 'notice', nick: msg.nick, text: `invites you to join ${msg.channel} — type /join ${msg.channel} to accept` });
       if (state.active !== '*server*') bumpUnread('*server*', false);
