@@ -16,7 +16,7 @@
 
 - [x] Keep op/voice prefixes from NAMES (353 currently strips @ and +)
 - [x] Handle INVITE — show a notice or prompt in *server* tab
-- [ ] Handle MODE — show mode changes as a system message in the channel
+- [x] Handle MODE — show mode changes as a system message in the channel
 - [ ] Browser notifications for mentions (Notification API)
 - [x] /topic command
 - [x] /whois, /away commands
