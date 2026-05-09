@@ -12,14 +12,11 @@ const state = {
 
 // ── DOM refs ─────────────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
-const connectScreen   = $('connect-screen');
-const chatScreen      = $('chat-screen');
-const connectForm     = $('connect-form');
-const connectError    = $('connect-error');
-const connectingBox   = $('connecting-box');
-const connectingLabel = $('connecting-label');
-const connectLog      = $('connect-log');
-const myNick          = $('my-nick');
+const connectScreen = $('connect-screen');
+const chatScreen    = $('chat-screen');
+const connectForm   = $('connect-form');
+const connectError  = $('connect-error');
+const myNick        = $('my-nick');
 const channelList   = $('channel-list');
 const messages      = $('messages');
 const targetName    = $('target-name');
@@ -36,7 +33,12 @@ connectForm.addEventListener('submit', e => {
   const tls    = $('tls').checked;
   if (!server || !nick) return;
   connectError.classList.add('hidden');
-  showConnecting(server);
+  connectScreen.classList.add('hidden');
+  chatScreen.classList.remove('hidden');
+  ensureChannel('*server*');
+  setActive('*server*');
+  myNick.textContent = nick;
+  appendMsg('*server*', { type: 'connecting', nick: '--', text: `Connecting to ${server}:${port}…` });
   openWS(server, port, nick, tls);
 });
 
@@ -58,12 +60,11 @@ function openWS(server, port, nick, tls) {
   };
 
   ws.onerror = () => {
-    hideConnecting();
-    showConnectError('WebSocket error');
+    if (!state.connected) onConnectFailed('WebSocket error');
   };
   ws.onclose = () => {
     if (state.connected) onDisconnect('Connection lost');
-    else { hideConnecting(); showConnectError('Connection closed'); }
+    else onConnectFailed('Connection closed');
   };
 }
 
@@ -74,11 +75,6 @@ function handle(msg) {
       state.connected = true;
       state.nick = msg.nick;
       myNick.textContent = msg.nick;
-      hideConnecting();
-      connectScreen.classList.add('hidden');
-      chatScreen.classList.remove('hidden');
-      ensureChannel('*server*');
-      setActive('*server*');
       appendMsg('*server*', { type: 'system', nick: '--', text: `Connected as ${msg.nick}` });
       break;
 
@@ -93,7 +89,7 @@ function handle(msg) {
     }
 
     case 'notice':
-      if (!state.connected) { appendConnectLog(msg.text); break; }
+      if (!state.connected) { appendMsg('*server*', { type: 'connecting', nick: msg.from || '--', text: msg.text, ts: msg.ts }); break; }
       appendMsg(state.active || '*server*', { type: 'notice', nick: msg.from, text: msg.text, ts: msg.ts });
       break;
 
@@ -154,7 +150,7 @@ function handle(msg) {
     }
 
     case 'error':
-      if (!state.connected) { appendConnectLog(msg.text, 'err'); hideConnecting(); showConnectError(msg.text); break; }
+      if (!state.connected) { onConnectFailed(msg.text); break; }
       appendMsg(state.active || '*server*', { type: 'error', nick: '!', text: msg.text });
       break;
 
@@ -360,30 +356,14 @@ function send(obj) {
   }
 }
 
-function showConnecting(server) {
-  connectLog.innerHTML = '';
-  connectingLabel.textContent = `Connecting to ${server}…`;
-  connectingBox.classList.remove('hidden');
-  connectForm.closest('.connect-box').classList.add('hidden');
+function onConnectFailed(reason) {
+  appendMsg('*server*', { type: 'error', nick: '!', text: reason });
+  state.channels.clear();
+  state.active = null;
+  chatScreen.classList.add('hidden');
+  connectScreen.classList.remove('hidden');
+  showConnectError(reason);
 }
-
-function hideConnecting() {
-  connectingBox.classList.add('hidden');
-  connectForm.closest('.connect-box').classList.remove('hidden');
-}
-
-function appendConnectLog(text, cls = '') {
-  const el = document.createElement('div');
-  el.className = 'log-line' + (cls ? ` ${cls}` : '');
-  el.textContent = text;
-  connectLog.appendChild(el);
-  connectLog.scrollTop = connectLog.scrollHeight;
-}
-
-$('connecting-cancel').addEventListener('click', () => {
-  state.ws?.close();
-  hideConnecting();
-});
 
 function onDisconnect(reason) {
   state.connected = false;
