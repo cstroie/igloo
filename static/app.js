@@ -162,6 +162,10 @@ function handle(msg) {
       renderUserlist();
       break;
 
+    case 'motd':
+      appendMsg('*server*', { type: 'motd', nick: '', text: msg.text });
+      break;
+
     case 'list_start':
       ensureChannel('*list*');
       state.channels.get('*list*').messages = [];

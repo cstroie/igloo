@@ -175,6 +175,15 @@ func (s *Session) ircLoop(lines <-chan string) {
 			logger.L.Info("NICK", "session", s.ID, "old", msg.Nick, "new", newNick)
 			s.sendWS(map[string]any{"type": "nick", "old": msg.Nick, "new": newNick})
 
+		case "375":
+			s.sendWS(map[string]any{"type": "motd", "text": msg.Trailing})
+
+		case "372":
+			s.sendWS(map[string]any{"type": "motd", "text": msg.Trailing})
+
+		case "376":
+			// end of MOTD — no message needed
+
 		case "321":
 			s.sendWS(map[string]any{"type": "list_start"})
 
