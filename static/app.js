@@ -140,6 +140,18 @@ function handle(msg) {
       }
       break;
 
+    case 'kick': {
+      const ch = state.channels.get(msg.channel);
+      if (ch) {
+        ch.nicks.delete(msg.nick);
+        renderUserlist();
+        const reason = msg.text ? ` (${msg.text})` : '';
+        appendMsg(msg.channel, { type: 'part', nick: '', text: `← ${msg.nick} was kicked by ${msg.by}${reason}` });
+      }
+      if (msg.nick === state.nick) removeChannel(msg.channel);
+      break;
+    }
+
     case 'quit':
       state.channels.forEach((ch, target) => {
         if (ch.nicks.has(msg.nick)) {
