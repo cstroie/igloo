@@ -234,6 +234,13 @@ func (s *Session) ircLoop(lines <-chan string) {
 			logger.L.Error("IRC ERROR", "session", s.ID, "text", msg.Trailing)
 			s.sendWS(map[string]any{"type": "error", "text": msg.Trailing})
 
+		case "INVITE":
+			if len(msg.Params) < 2 {
+				continue
+			}
+			logger.L.Info("INVITE", "session", s.ID, "nick", msg.Nick, "channel", msg.Params[1])
+			s.sendWS(map[string]any{"type": "invite", "nick": msg.Nick, "channel": msg.Params[1]})
+
 		case "KICK":
 			if len(msg.Params) < 2 {
 				continue

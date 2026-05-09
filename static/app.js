@@ -143,6 +143,11 @@ function handle(msg) {
       }
       break;
 
+    case 'invite':
+      appendMsg('*server*', { type: 'notice', nick: msg.nick, text: `invites you to join ${msg.channel} — type /join ${msg.channel} to accept` });
+      if (state.active !== '*server*') bumpUnread('*server*', false);
+      break;
+
     case 'kick': {
       const ch = state.channels.get(msg.channel);
       if (ch) {
