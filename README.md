@@ -23,9 +23,11 @@ Requires Go 1.21+.
 ## Usage
 
 ```sh
-igloo                    # listens on 0.0.0.0:6677
-igloo -addr :8080        # custom address
-igloo -dev               # serve static files from disk (no embed, for development)
+igloo                          # listens on 0.0.0.0:6677
+igloo -addr :8080              # custom address
+igloo -dev                     # serve static files from disk (no embed, for development)
+igloo -log-level debug         # log level: debug, info, warn, error (default: info)
+igloo -log-json                # emit logs as JSON instead of text
 ```
 
 Then open `http://localhost:6677` in your browser, fill in your IRC server and nick, and connect.
