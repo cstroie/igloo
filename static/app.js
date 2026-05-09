@@ -120,7 +120,7 @@ function handle(msg) {
         setActive(msg.channel);
       } else {
         ensureChannel(msg.channel);
-        state.channels.get(msg.channel)?.nicks.add(msg.nick);
+        state.channels.get(msg.channel)?.nicks.set(msg.nick, '');
         renderUserlist();
         appendMsg(msg.channel, { type: 'join', nick: '', text: `→ ${msg.nick} joined ${msg.channel}` });
       }
@@ -130,8 +130,7 @@ function handle(msg) {
       if (msg.nick === state.nick) {
         removeChannel(msg.channel);
       } else {
-        state.channels.get(msg.channel)?.nicks.delete(msg.nick);
-        renderUserlist();
+        state.channels.get(msg.channel)?.nicks.delete(msg.nick);        renderUserlist();
         appendMsg(msg.channel, { type: 'part', nick: '', text: `← ${msg.nick} left ${msg.channel}` });
       }
       break;
@@ -153,8 +152,9 @@ function handle(msg) {
       }
       state.channels.forEach((ch, target) => {
         if (ch.nicks.has(msg.old)) {
+          const prefix = ch.nicks.get(msg.old);
           ch.nicks.delete(msg.old);
-          ch.nicks.add(msg.new);
+          ch.nicks.set(msg.new, prefix);
           appendMsg(target, { type: 'system', nick: '', text: `${msg.old} is now known as ${msg.new}` });
         }
       });
@@ -173,7 +173,10 @@ function handle(msg) {
     case 'names': {
       const ch = state.channels.get(msg.channel);
       if (ch) {
-        ch.nicks = new Set(msg.nicks.map(n => n.replace(/^[@+]/, '')));
+        ch.nicks = new Map(msg.nicks.map(n => {
+          const prefix = /^[@+]/.test(n) ? n[0] : '';
+          return [n.replace(/^[@+]/, ''), prefix];
+        }));
         renderUserlist();
       }
       break;
@@ -193,7 +196,7 @@ function handle(msg) {
 // ── Channels ──────────────────────────────────────────────────────────────────
 function ensureChannel(target) {
   if (!state.channels.has(target)) {
-    state.channels.set(target, { messages: [], nicks: new Set(), unread: 0, mention: false, topic: '' });
+    state.channels.set(target, { messages: [], nicks: new Map(), unread: 0, mention: false, topic: '' });
     renderChannelList();
   }
 }
@@ -297,11 +300,14 @@ function renderUserlist() {
   userlist.innerHTML = '';
   const ch = state.active && state.channels.get(state.active);
   if (!ch) return;
-  const sorted = [...ch.nicks].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-  sorted.forEach(nick => {
+  const sorted = [...ch.nicks.entries()].sort(([a, pa], [b, pb]) => {
+    const rank = p => p === '@' ? 0 : p === '+' ? 1 : 2;
+    return rank(pa) - rank(pb) || a.toLowerCase().localeCompare(b.toLowerCase());
+  });
+  sorted.forEach(([nick, prefix]) => {
     const el = document.createElement('div');
-    el.className = 'user-item';
-    el.textContent = nick;
+    el.className = 'user-item' + (prefix === '@' ? ' op' : prefix === '+' ? ' voice' : '');
+    el.textContent = (prefix || ' ') + nick;
     userlist.appendChild(el);
   });
 }
