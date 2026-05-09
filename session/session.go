@@ -16,12 +16,14 @@ import (
 )
 
 const wsReconnectWindow = 60 * time.Second
+const bufferMax = 500
 
 type Session struct {
 	ID     string
 	Nick   string
 	mu     sync.Mutex
 	ws     *websocket.Conn
+	buf    [][]byte // messages buffered while WS is detached
 	conn   net.Conn
 	done   chan struct{}
 	nspass string
@@ -56,7 +58,12 @@ func (r *Registry) Resume(id string, ws *websocket.Conn) *Session {
 	}
 	s.mu.Lock()
 	s.ws = ws
+	pending := s.buf
+	s.buf = nil
 	s.mu.Unlock()
+	for _, data := range pending {
+		ws.WriteMessage(websocket.TextMessage, data)
+	}
 	return s
 }
 
@@ -73,6 +80,9 @@ func (r *Registry) Detach(s *Session) {
 		s.mu.Unlock()
 		if wsGone {
 			logger.L.Info("session expired", "session", s.ID)
+			s.mu.Lock()
+			s.buf = nil
+			s.mu.Unlock()
 			s.Close()
 			r.Remove(s.ID)
 		}
@@ -272,6 +282,9 @@ func (s *Session) sendWS(v any) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.ws == nil {
+		if len(s.buf) < bufferMax {
+			s.buf = append(s.buf, data)
+		}
 		return
 	}
 	s.ws.WriteMessage(websocket.TextMessage, data)
