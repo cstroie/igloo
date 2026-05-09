@@ -33,9 +33,18 @@
           <label>Nickname</label>
           <input type="text" id="nick" placeholder="yournick" required>
         </div>
-        <button type="submit">Connect</button>
+        <button type="submit" id="connect-btn">Connect</button>
       </form>
       <div id="connect-error" class="error-msg hidden"></div>
+    </div>
+
+    <div id="connecting-box" class="connect-box hidden">
+      <div class="connecting-header">
+        <span class="spinner"></span>
+        <span id="connecting-label">Connecting…</span>
+      </div>
+      <div id="connect-log"></div>
+      <button id="connecting-cancel">Cancel</button>
     </div>
   </div>
 
