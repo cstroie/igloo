@@ -293,8 +293,11 @@ html, body { height: 100%; font-family: var(--font-mono); background: var(--bg);
   border-radius: 5px; margin: 1px 6px; transition: background 0.1s, color 0.1s;
 }
 .user-item:hover { background: var(--bg3); color: var(--text); }
-.user-item.op { color: var(--mention); }
-.user-item.voice { color: var(--notice); }
+.user-item.owner  { color: #e05c5c; }
+.user-item.admin  { color: #e07c3a; }
+.user-item.op     { color: var(--mention); }
+.user-item.halfop { color: #6abf69; }
+.user-item.voice  { color: var(--notice); }
 .user-nick { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
 .dm-btn {
   background: none; border: none; color: var(--text-dim); cursor: pointer;

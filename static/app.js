@@ -338,6 +338,7 @@ function handle(msg) {
         lines.push(msg.text);
         state.whoisCache.set(state.pendingWhois, lines);
         if (isDM(state.active) && state.active === state.pendingWhois) renderUserlist();
+        if (msg.text.startsWith('— end of whois')) state.pendingWhois = null;
       }
       break;
     }
@@ -608,6 +609,11 @@ function isDM(target) {
 function openDM(nick) {
   ensureChannel(nick);
   setActive(nick);
+  // auto-fetch WHOIS so the DM card shows badges immediately
+  if (!state.whoisCache.has(nick)) {
+    state.pendingWhois = nick;
+    send({ type: 'raw', line: `WHOIS ${nick}` });
+  }
 }
 
 function parseWhois(lines) {
@@ -711,13 +717,15 @@ function renderUserlist() {
   header.textContent = 'Users';
   const ch = state.active && state.channels.get(state.active);
   if (!ch) return;
+  const prefixRank = {'~':0,'&':1,'@':2,'%':3,'+':4};
+  const prefixClass = {'~':'owner','&':'admin','@':'op','%':'halfop','+':'voice'};
   const sorted = [...ch.nicks.entries()].sort(([a, pa], [b, pb]) => {
-    const rank = p => p === '@' ? 0 : p === '+' ? 1 : 2;
+    const rank = p => prefixRank[p] ?? 5;
     return rank(pa) - rank(pb) || a.toLowerCase().localeCompare(b.toLowerCase());
   });
   sorted.forEach(([nick, prefix]) => {
     const el = document.createElement('div');
-    el.className = 'user-item' + (prefix === '@' ? ' op' : prefix === '+' ? ' voice' : '');
+    el.className = 'user-item' + (prefixClass[prefix] ? ' ' + prefixClass[prefix] : '');
     const nc = nickColor(nick);
     el.innerHTML = `<span class="user-nick" style="${nc ? `color:${nc}` : ''}">${escHtml((prefix || ' ') + nick)}</span>` +
       (nick !== state.nick ? `<button class="dm-btn" title="Message ${escHtml(nick)}">✉</button>` : '');
