@@ -1,22 +1,61 @@
-# igloo
+# wirgloo
 
-A web IRC client written in Go.
+A self-hosted web IRC client written in Go.
 
-The server proxies IRC over a WebSocket so you can connect from any browser. A single binary serves both the static UI and the WebSocket endpoint.
+The server proxies IRC over a WebSocket so you can connect from any browser. A single binary serves both the static UI and the WebSocket endpoint — no Node.js, no build step, no external dependencies beyond Go.
 
 ## Features
 
-- TLS and plain IRC connections
-- Channels, private messages, `/me`, nick changes
-- WebSocket reconnection with exponential backoff — the IRC session stays alive across brief network interruptions
-- Graceful handling of server restarts
+**Connectivity**
+- TLS and plain IRC connections, self-signed certificate support
+- Predefined network presets (Libera.Chat, OFTC, Rizon, EFnet, QuakeNet, DALnet, Undernet, IRCnet, GeekShed, RadioChat, SDF)
+- Custom server profiles saved to browser localStorage
+- WebSocket reconnection with exponential backoff — IRC session survives brief network drops
+- Transparent reconnect after server restart: channels are re-joined, messages preserved
 
-## Build & install
+**Authentication**
+- SASL PLAIN (full CAP negotiation)
+- NickServ IDENTIFY (PRIVMSG and NICKSERV command variants)
+- Server password (/PASS)
+
+**Channels & messaging**
+- Channels, private messages, `/me` actions
+- IRC formatting codes (bold, italic, underline, colour, monospace)
+- Markdown-lite rendering (headings, bold, italic, strikethrough, inline code)
+- Nick mentions highlighted in their assigned colour
+- Chat log persisted per server/channel in localStorage, replayed on reconnect with session-break marker
+- Previously joined channels remembered and shown as offline placeholders on reconnect
+
+**User list**
+- IRCv3 `multi-prefix` CAP — all privilege levels shown per nick
+- Prefix symbols coloured by role: `~` owner · `&` admin · `@` op · `%` half-op · `+` voice
+- Server `PREFIX` token (005) parsed at connect time — adapts to any IRCd
+- User count in panel header
+
+**WHOIS & DMs**
+- WHOIS fetched automatically when opening a DM or when someone messages you first
+- User info card: real name, host, server, idle time, channels with prefix badges
+- Identity badges: 🔒 Secure · ✓ Identified · ⚡ IRCop · 🤖 Bot · ⏾ Away
+
+**Commands**
+`/join` `/part` `/msg` `/me` `/nick` `/topic` `/kick` `/ban` `/mode`
+`/invite` `/notice` `/whois` `/ping` `/slap` `/ignore` `/unignore`
+`/list` `/clear` `/help` and raw `/raw`
+
+**UI**
+- Auto light/dark theme via `prefers-color-scheme`
+- JetBrains Mono font
+- Nick colours derived from a hash (consistent across sessions)
+- Channel list sortable by name, user count, or topic
+- Emoji icons per entry type in sidebar (server, channel, DM, list)
+- Rate-limited outbound IRC (token bucket, 3 lines/sec)
+
+## Build & run
 
 Requires Go 1.21+.
 
 ```sh
-make                   # build ./igloo
+make                   # build ./wirgloo
 make install           # install binary to /usr/local/bin
 make install-service   # install binary + systemd unit, reload systemd
 ```
@@ -24,13 +63,13 @@ make install-service   # install binary + systemd unit, reload systemd
 `PREFIX` and `SYSTEMD_DIR` can be overridden:
 
 ```sh
-make install-service PREFIX=/opt/igloo SYSTEMD_DIR=/etc/systemd/system
+make install-service PREFIX=/opt/wirgloo SYSTEMD_DIR=/etc/systemd/system
 ```
 
 After `install-service`, enable and start the service:
 
 ```sh
-systemctl enable --now igloo
+systemctl enable --now wirgloo
 ```
 
 To remove:
@@ -42,25 +81,26 @@ make uninstall         # stop service, remove unit and binary
 ## Usage
 
 ```sh
-igloo                          # listens on 0.0.0.0:6677
-igloo -addr :8080              # custom address
-igloo -dev                     # serve static files from disk (no embed, for development)
-igloo -log-level debug         # log level: debug, info, warn, error (default: info)
-igloo -log-json                # emit logs as JSON instead of text
+wirgloo                        # listens on 0.0.0.0:6677
+wirgloo -addr :8080            # custom address
+wirgloo -dev                   # serve static files from disk (no embed, for development)
+wirgloo -log-level debug       # log level: debug, info, warn, error (default: info)
+wirgloo -log-json              # emit logs as JSON instead of text
 ```
 
-Then open `http://localhost:6677` in your browser, fill in your IRC server and nick, and connect.
-
-## License
-
-GPL-3.0 — see [LICENSE](LICENSE).
+Open `http://localhost:6677` in your browser, choose a network or enter a custom server, fill in your nick, and connect.
 
 ## Project layout
 
 ```
 main.go          entry point, HTTP server
 ws/              WebSocket handler and message dispatch
-session/         session registry, IRC↔WS bridge
-irc/             IRC dial, handshake, line reader, parser
+session/         session registry, IRC↔WS bridge, rate limiter, SASL
+irc/             IRC dial, handshake, line reader/parser
+logger/          structured logger setup
 static/          browser UI (HTML, CSS, JS — no build step)
 ```
+
+## License
+
+GPL-3.0 — see [LICENSE](LICENSE).
