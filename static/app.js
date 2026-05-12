@@ -7,6 +7,7 @@ const state = {
   server: '',
   connected: false,
   sessionId: null,
+  connectParams: null, // saved to auto-reconnect after session_expired
   // Map<target, {messages: [], nicks: Set, unread: number, mention: boolean}>
   channels: new Map(),
   active: null,
@@ -186,6 +187,7 @@ connectForm.addEventListener('submit', e => {
     renderSavedProfiles();
   }
   state.server = server;
+  state.connectParams = { server, port, nick, realname, tls, selfsigned, authMethod, pass };
   connectError.classList.add('hidden');
   connectScreen.classList.add('hidden');
   chatScreen.classList.remove('hidden');
@@ -278,11 +280,19 @@ function handle(msg) {
     case 'session_expired':
       state.sessionId = null;
       state.connected = false;
-      state.ws?.close();
-      state.channels.clear();
-      state.active = null;
-      chatScreen.classList.add('hidden');
-      connectScreen.classList.remove('hidden');
+      if (state.connectParams) {
+        // server was restarted — reconnect transparently using saved params
+        const p = state.connectParams;
+        appendMsg('*server*', { type: 'connecting', nick: '--', text: 'Session expired — reconnecting…' });
+        reconnectDelay = 1000;
+        openWS(p.server, p.port, p.nick, p.realname, p.tls, p.selfsigned, p.authMethod, p.pass);
+      } else {
+        state.ws?.close();
+        state.channels.clear();
+        state.active = null;
+        chatScreen.classList.add('hidden');
+        connectScreen.classList.remove('hidden');
+      }
       showConnectError('Disconnected — server was restarted');
       break;
 
@@ -1061,14 +1071,19 @@ function scheduleReconnect() {
   const secs = Math.round(reconnectDelay / 1000);
   appendMsg('*server*', { type: 'connecting', nick: '--', text: `Connection lost — reconnecting in ${secs}s…` });
   setTimeout(() => {
-    if (!state.sessionId) return;
     appendMsg('*server*', { type: 'connecting', nick: '--', text: 'Reconnecting…' });
-    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-    const ws = new WebSocket(`${proto}://${location.host}/ws?session=${state.sessionId}`);
-    state.ws = ws;
-    ws.onmessage = e => { try { handle(JSON.parse(e.data)); } catch {} };
-    ws.onerror = () => {};
-    ws.onclose = () => { if (state.sessionId) scheduleReconnect(); };
+    if (state.sessionId) {
+      const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+      const ws = new WebSocket(`${proto}://${location.host}/ws?session=${state.sessionId}`);
+      state.ws = ws;
+      ws.onmessage = e => { try { handle(JSON.parse(e.data)); } catch {} };
+      ws.onerror = () => {};
+      ws.onclose = () => { if (state.sessionId || state.connectParams) scheduleReconnect(); };
+    } else if (state.connectParams) {
+      // session was lost (server restart during reconnect window) — do a full reconnect
+      const p = state.connectParams;
+      openWS(p.server, p.port, p.nick, p.realname, p.tls, p.selfsigned, p.authMethod, p.pass);
+    }
   }, reconnectDelay);
   reconnectDelay = Math.min(reconnectDelay * 2, 30000);
 }
