@@ -501,10 +501,11 @@ function buildMsgEl(m, target) {
   }
 
   const self = m.nick === state.nick;
+  const nc = nickColor(m.nick);
   el.innerHTML = `
     <span class="ts">${ts}</span>
     <span class="body">
-      <span class="nick-col ${self ? 'self' : ''}">${escHtml(m.nick || '')}</span>
+      <span class="nick-col ${self ? 'self' : ''}" style="${nc ? `color:${nc}` : ''}">${escHtml(m.nick || '')}</span>
       <span class="text">${linkify(escHtml(m.text))}</span>
     </span>`;
   return el;
@@ -526,7 +527,8 @@ function renderUserlist() {
   sorted.forEach(([nick, prefix]) => {
     const el = document.createElement('div');
     el.className = 'user-item' + (prefix === '@' ? ' op' : prefix === '+' ? ' voice' : '');
-    el.innerHTML = `<span class="user-nick">${escHtml((prefix || ' ') + nick)}</span>` +
+    const nc = nickColor(nick);
+    el.innerHTML = `<span class="user-nick" style="${nc ? `color:${nc}` : ''}">${escHtml((prefix || ' ') + nick)}</span>` +
       (nick !== state.nick ? `<button class="dm-btn" title="Message ${escHtml(nick)}">✉</button>` : '');
     el.querySelector('.dm-btn')?.addEventListener('click', e => {
       e.stopPropagation();
@@ -700,6 +702,15 @@ function onDisconnect(reason) {
 function showConnectError(msg) {
   connectError.textContent = msg;
   connectError.classList.remove('hidden');
+}
+
+function nickColor(nick) {
+  if (!nick || nick === '--') return '';
+  let h = 0;
+  for (let i = 0; i < nick.length; i++) h = (Math.imul(31, h) + nick.charCodeAt(i)) | 0;
+  const hue = ((h >>> 0) % 360);
+  const light = window.matchMedia('(prefers-color-scheme: light)').matches ? '38%' : '68%';
+  return `hsl(${hue},65%,${light})`;
 }
 
 function fmtTime(unix) {
