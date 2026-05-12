@@ -14,6 +14,7 @@
     <div class="connect-box">
       <h1>igloo</h1>
       <p class="subtitle">Web IRC Client</p>
+      <div id="connect-error" class="error-msg hidden"></div>
       <form id="connect-form">
         <div class="field">
           <label>Network</label>
@@ -73,7 +74,6 @@
         </div>
         <button type="submit" id="connect-btn">Connect</button>
       </form>
-      <div id="connect-error" class="error-msg hidden"></div>
     </div>
 
   </div>
@@ -95,6 +95,12 @@
       <div id="topic-bar">
         <span id="target-name"></span>
         <span id="topic-text"></span>
+      </div>
+      <div id="list-sort-bar" class="hidden">
+        <span class="sort-label">Sort by</span>
+        <button class="sort-btn" data-sort="users">Users ↓</button>
+        <button class="sort-btn" data-sort="name">Name</button>
+        <button class="sort-btn" data-sort="topic">Topic</button>
       </div>
       <div id="messages"></div>
       <div id="input-bar">

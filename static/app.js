@@ -13,6 +13,8 @@ const state = {
   whoisCache: new Map(), // nick → string[]
   pendingWhois: null,
   ignored: new Set(),    // client-side ignored nicks
+  listItems: [],         // raw {channel, count, topic} from LIST
+  listSort: 'users',     // 'name' | 'users' | 'topic'
 };
 
 let reconnectDelay = 1000;
@@ -331,20 +333,20 @@ function handle(msg) {
       break;
 
     case 'list_start':
+      state.listItems = [];
       ensureChannel('*list*');
       state.channels.get('*list*').messages = [];
-      if (state.active === '*list*') renderMessages('*list*');
-      appendMsg('*list*', { type: 'system', nick: '--', text: 'Channel list:' });
       if (state.active !== '*list*') setActive('*list*');
+      renderListBar();
       break;
 
     case 'list_item':
-      ensureChannel('*list*');
-      appendMsg('*list*', { type: 'list', nick: msg.count, text: msg.channel + (msg.topic ? '  ' + msg.topic : '') });
+      state.listItems.push({ channel: msg.channel, count: parseInt(msg.count) || 0, topic: msg.topic || '' });
+      if (state.active === '*list*') renderListMessages();
       break;
 
     case 'list_end':
-      appendMsg('*list*', { type: 'system', nick: '--', text: 'End of list' });
+      if (state.active === '*list*') renderListMessages();
       break;
 
     case 'topic': {
@@ -434,7 +436,48 @@ function setActive(target) {
   targetName.textContent = target === '*server*' ? state.server : target;
   topicText.textContent = ch.topic || '';
   updateTitle();
+  renderListBar();
   input.focus();
+}
+
+function renderListBar() {
+  const bar = $('list-sort-bar');
+  if (state.active !== '*list*') { bar.classList.add('hidden'); return; }
+  bar.classList.remove('hidden');
+  bar.querySelectorAll('.sort-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.sort === state.listSort);
+  });
+}
+
+function renderListMessages() {
+  const sorters = {
+    name:  (a, b) => a.channel.localeCompare(b.channel),
+    users: (a, b) => b.count - a.count,
+    topic: (a, b) => a.topic.localeCompare(b.topic),
+  };
+  const sorted = [...state.listItems].sort(sorters[state.listSort] || sorters.users);
+  messages.innerHTML = '';
+  sorted.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'msg list';
+    el.innerHTML = `
+      <span class="ts"></span>
+      <span class="body">
+        <span class="nick-col list-count">${item.count}</span>
+        <span class="text">
+          <span class="chan list-join" data-channel="${escHtml(item.channel)}">${escHtml(item.channel)}</span>
+          <span class="ltopic">${linkify(escHtml(item.topic))}</span>
+        </span>
+      </span>`;
+    el.querySelector('.list-join').addEventListener('click', () => {
+      send({ type: 'join', channel: item.channel });
+    });
+    messages.appendChild(el);
+  });
+  const summary = document.createElement('div');
+  summary.className = 'msg system';
+  summary.innerHTML = `<span class="ts"></span><span class="body"><span class="nick-col"></span><span class="text">${sorted.length} channels</span></span>`;
+  messages.appendChild(summary);
 }
 
 function updateTitle() {
@@ -803,6 +846,15 @@ function handleCommand(raw) {
       appendMsg(state.active, { type: 'error', nick: '!', text: `Unknown command: /${cmd}  (try /help)` });
   }
 }
+
+// ── List sort bar ─────────────────────────────────────────────────────────────
+$('list-sort-bar').addEventListener('click', e => {
+  const btn = e.target.closest('.sort-btn');
+  if (!btn) return;
+  state.listSort = btn.dataset.sort;
+  renderListBar();
+  renderListMessages();
+});
 
 // ── Sidebar buttons ───────────────────────────────────────────────────────────
 $('join-btn').addEventListener('click', () => {
