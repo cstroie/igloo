@@ -372,13 +372,23 @@ function handle(msg) {
       break;
     }
 
-    case 'names': {
+    case 'names_chunk': {
       const ch = state.channels.get(msg.channel);
       if (ch) {
-        ch.nicks = new Map(msg.nicks.map(n => {
-          const prefix = /^[@+]/.test(n) ? n[0] : '';
-          return [n.replace(/^[@+]/, ''), prefix];
-        }));
+        if (!ch._namesAccum) ch._namesAccum = new Map();
+        msg.nicks.forEach(n => {
+          const prefix = /^[@+~&%]/.test(n) ? n[0] : '';
+          ch._namesAccum.set(n.replace(/^[@+~&%]/, ''), prefix);
+        });
+      }
+      break;
+    }
+
+    case 'names_end': {
+      const ch = state.channels.get(msg.channel);
+      if (ch && ch._namesAccum) {
+        ch.nicks = ch._namesAccum;
+        ch._namesAccum = null;
         renderUserlist();
       }
       break;

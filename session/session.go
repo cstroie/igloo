@@ -422,14 +422,20 @@ func (s *Session) ircLoop(lines <-chan string) {
 			logger.L.Debug("TOPIC", "session", s.ID, "channel", channel)
 			s.sendWS(map[string]any{"type": "topic", "channel": channel, "text": msg.Trailing})
 
-		case "353": // RPL_NAMREPLY — nick list for a channel
+		case "353": // RPL_NAMREPLY — nick list chunk for a channel
 			if len(msg.Params) < 3 {
 				continue
 			}
 			channel := msg.Params[len(msg.Params)-2]
 			nicks := strings.Fields(msg.Trailing)
-			logger.L.Debug("NAMES", "session", s.ID, "channel", channel, "count", len(nicks))
-			s.sendWS(map[string]any{"type": "names", "channel": channel, "nicks": nicks})
+			logger.L.Debug("NAMES chunk", "session", s.ID, "channel", channel, "count", len(nicks))
+			s.sendWS(map[string]any{"type": "names_chunk", "channel": channel, "nicks": nicks})
+
+		case "366": // RPL_ENDOFNAMES
+			if len(msg.Params) < 2 {
+				continue
+			}
+			s.sendWS(map[string]any{"type": "names_end", "channel": msg.Params[1]})
 
 		case "433": // ERR_NICKNAMEINUSE
 			logger.L.Warn("nick in use", "session", s.ID, "nick", s.Nick)
