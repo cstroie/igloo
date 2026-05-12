@@ -501,6 +501,11 @@ function buildMsgEl(m, target) {
   return el;
 }
 
+function openDM(nick) {
+  ensureChannel(nick);
+  setActive(nick);
+}
+
 function renderUserlist() {
   userlist.innerHTML = '';
   const ch = state.active && state.channels.get(state.active);
@@ -512,7 +517,12 @@ function renderUserlist() {
   sorted.forEach(([nick, prefix]) => {
     const el = document.createElement('div');
     el.className = 'user-item' + (prefix === '@' ? ' op' : prefix === '+' ? ' voice' : '');
-    el.textContent = (prefix || ' ') + nick;
+    el.innerHTML = `<span class="user-nick">${escHtml((prefix || ' ') + nick)}</span>` +
+      (nick !== state.nick ? `<button class="dm-btn" title="Message ${escHtml(nick)}">✉</button>` : '');
+    el.querySelector('.dm-btn')?.addEventListener('click', e => {
+      e.stopPropagation();
+      openDM(nick);
+    });
     userlist.appendChild(el);
   });
 }
@@ -583,8 +593,7 @@ function handleCommand(raw) {
     case 'MSG':
     case 'QUERY': {
       const [target, ...txt] = arg.split(' ');
-      ensureChannel(target);
-      setActive(target);
+      openDM(target);
       if (txt.length) {
         send({ type: 'message', target, text: txt.join(' ') });
         appendMsg(target, { type: 'msg', nick: state.nick, text: txt.join(' '), ts: Date.now() / 1000 });
