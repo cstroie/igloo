@@ -1,31 +1,47 @@
 # TODO
 
-## High value, low effort
+## Done
 
-- [x] Populate topic bar from IRC numerics 332/333 (server sends on join)
-- [x] Display MOTD (372/375/376) in *server* tab
-- [x] Handle KICK — show in channel, remove user from list
+- [x] Populate topic bar from IRC numerics 332/333
+- [x] Display MOTD in *server* tab
+- [x] Handle KICK, INVITE, MODE, QUIT, NICK
 - [x] Nick tab-completion in the input box
-- [x] NickServ password field on connect form (PRIVMSG NickServ :IDENTIFY after 001)
-- [x] Password box
+- [x] Authentication: SASL PLAIN, NickServ IDENTIFY, Server PASS (single password field + method dropdown)
 - [x] Accept self-signed certificates
-- [x] Auto-rejoin channels after WebSocket reconnect
-- [x] Buffer IRC messages server-side during WebSocket disconnect window (currently dropped)
+- [x] WebSocket reconnection with exponential backoff (session survives brief drops)
+- [x] Transparent reconnect after server restart (re-joins channels, preserves messages)
+- [x] Buffer IRC messages server-side during WebSocket disconnect window
+- [x] IRCv3 multi-prefix CAP — all privilege levels per nick in NAMES
+- [x] Parse 005 PREFIX token — adapt prefix rank/colour to any IRCd
+- [x] Accumulate NAMES chunks (353) before committing on 366 — fixes incomplete user lists
+- [x] Op/voice/owner/admin/halfop prefix colours in user list
+- [x] User count in userlist header
+- [x] Prefix symbol styled separately from nick name in userlist
+- [x] Outgoing message rate limiting — token bucket, ~3 lines/sec
+- [x] /topic /whois /away /list /kick /ban /mode /invite /notice /ping /slap /ignore /unignore /help /clear
+- [x] /me action messages rendered as italicised "* Nick action"
+- [x] IRC formatting codes (bold, italic, underline, colour, monospace, strikethrough)
+- [x] Markdown-lite (headings, **bold**, *italic*, ~~strike~~, `code`)
+- [x] Nick mention highlighting in message text (bold, nick colour)
+- [x] Hash-based nick colours (consistent, HSL, dark/light theme aware)
+- [x] Chat log persisted per server/channel in localStorage
+- [x] Remembered channels shown as offline placeholders on reconnect; click to rejoin
+- [x] WHOIS user info card in DM panel (badges, channels with prefix chips)
+- [x] Auto-WHOIS when opening a DM or when someone messages us first
+- [x] WHOIS badges: 🔒 Secure · ✓ Identified · ⚡ IRCop · 🤖 Bot · ⏾ Away
+- [x] Channel list sortable by name, user count, or topic; clickable to join
+- [x] Predefined network presets + custom profiles saved to localStorage
+- [x] Auto light/dark theme via prefers-color-scheme
+- [x] Emoji icons per sidebar entry type (server, channel, DM, list)
+- [x] Real Name field on connect form
+- [x] CAP END / rate limiting / clean QUIT (play nice with IRCd)
 
-## Medium value, medium effort
+## Planned
 
-- [x] Keep op/voice prefixes from NAMES (353 currently strips @ and +)
-- [x] Handle INVITE — show a notice or prompt in *server* tab
-- [x] Handle MODE — show mode changes as a system message in the channel
 - [ ] Browser notifications for mentions (Notification API)
-- [x] /topic command
-- [x] /whois, /away commands
-- [x] /list command
-- [ ] Outgoing message rate limiting (avoid flood-kick)
-
-## Larger / nice to have
-
-- [ ] Mobile-responsive layout (sidebar collapses, fixed pixel widths)
-- [ ] Multiple server connections
+- [ ] Mobile-responsive layout (sidebar collapses)
 - [ ] Channel key support (/join #channel key)
-- [ ] Message replay on reconnect (store N messages server-side per session)
+- [ ] Multiple server connections
+- [ ] away-notify CAP — live away status without polling WHOIS
+- [ ] server-time CAP — use server timestamps instead of client clock
+- [ ] DM history stored per nick (currently only channel logs are persisted)
