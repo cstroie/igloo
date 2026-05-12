@@ -7,6 +7,7 @@ package session
 
 import (
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -34,16 +35,17 @@ const (
 // connection. All fields are protected by mu except ID and done (immutable
 // after creation).
 type Session struct {
-	ID       string
-	Nick     string
-	mu       sync.Mutex
-	ws       *websocket.Conn
-	buf      [][]byte // messages buffered while WS is detached
-	conn     net.Conn
-	done     chan struct{}
-	nspass   string
-	lastPong time.Time
-	sendQ    chan string // rate-limited outbound line queue
+	ID         string
+	Nick       string
+	mu         sync.Mutex
+	ws         *websocket.Conn
+	buf        [][]byte // messages buffered while WS is detached
+	conn       net.Conn
+	done       chan struct{}
+	authMethod string // "none" | "sasl" | "nickserv" | "nickserv_cmd" | "server"
+	authPass   string
+	lastPong   time.Time
+	sendQ      chan string // rate-limited outbound line queue
 }
 
 // Registry is a thread-safe map of active sessions keyed by session ID.
@@ -121,11 +123,12 @@ func (r *Registry) Remove(id string) {
 }
 
 // Connect dials the IRC server, runs the registration handshake, and starts
-// the read and ping goroutines. nspass is used to identify with NickServ
-// after receiving the welcome numeric (001); pass is the server PASS sent
-// during the handshake. Connect returns once the TCP connection and handshake
-// succeed; the 001 numeric arrives asynchronously via ircLoop.
-func (s *Session) Connect(server string, port int, nick, realname string, useTLS, selfSigned bool, pass, nspass string) error {
+// the read and ping goroutines. authMethod controls how pass is used:
+// "sasl" → SASL PLAIN CAP negotiation; "nickserv" → PRIVMSG NickServ :IDENTIFY;
+// "nickserv_cmd" → NICKSERV IDENTIFY; "server" → PASS command in handshake;
+// "none" or empty → no authentication. Connect returns once the TCP connection
+// and handshake succeed; the 001 numeric arrives asynchronously via ircLoop.
+func (s *Session) Connect(server string, port int, nick, realname string, useTLS, selfSigned bool, pass, authMethod string) error {
 	if realname == "" {
 		realname = nick
 	}
@@ -139,10 +142,20 @@ func (s *Session) Connect(server string, port int, nick, realname string, useTLS
 	s.mu.Lock()
 	s.conn = conn
 	s.Nick = nick
-	s.nspass = nspass
+	s.authMethod = authMethod
+	s.authPass = pass
 	s.mu.Unlock()
 
-	if err := irc.Handshake(conn, nick, nick, realname, pass); err != nil {
+	serverPass := ""
+	capReq := ""
+	switch authMethod {
+	case "server":
+		serverPass = pass
+	case "sasl":
+		capReq = "sasl"
+	}
+
+	if err := irc.Handshake(conn, nick, nick, realname, serverPass, capReq); err != nil {
 		conn.Close()
 		logger.L.Error("IRC handshake failed", "session", s.ID, "err", err)
 		s.sendWS(map[string]any{"type": "connect_error", "text": err.Error()})
@@ -221,7 +234,35 @@ func (s *Session) ircLoop(lines <-chan string) {
 		msg := irc.ParseLine(line)
 		switch msg.Command {
 		case "CAP":
-			// Acknowledge and end capability negotiation immediately.
+			sub := ""
+			if len(msg.Params) >= 2 {
+				sub = msg.Params[len(msg.Params)-2]
+			}
+			s.mu.Lock()
+			am := s.authMethod
+			s.mu.Unlock()
+			if sub == "ACK" && am == "sasl" && strings.Contains(msg.Trailing+" "+strings.Join(msg.Params, " "), "sasl") {
+				s.writeNow("AUTHENTICATE PLAIN")
+			} else {
+				s.writeNow("CAP END")
+			}
+
+		case "AUTHENTICATE":
+			// Server is ready for our SASL payload.
+			if msg.Trailing == "+" || (len(msg.Params) > 0 && msg.Params[0] == "+") {
+				s.mu.Lock()
+				nick := s.Nick
+				pass := s.authPass
+				s.mu.Unlock()
+				payload := base64.StdEncoding.EncodeToString([]byte("\x00" + nick + "\x00" + pass))
+				s.writeNow("AUTHENTICATE " + payload)
+			}
+
+		case "903": // RPL_SASLSUCCESS
+			s.writeNow("CAP END")
+
+		case "904", "905": // ERR_SASLFAIL, ERR_SASLTOOLONG
+			s.sendWS(map[string]any{"type": "error", "text": "SASL authentication failed: " + msg.Trailing})
 			s.writeNow("CAP END")
 
 		case "PING":
@@ -235,10 +276,18 @@ func (s *Session) ircLoop(lines <-chan string) {
 		case "001": // welcome — IRC registration complete
 			logger.L.Info("IRC connected", "session", s.ID, "nick", s.Nick)
 			s.mu.Lock()
-			nspass := s.nspass
+			am := s.authMethod
+			ap := s.authPass
 			s.mu.Unlock()
-			if nspass != "" {
-				s.SendIRC("PRIVMSG NickServ :IDENTIFY " + nspass)
+			switch am {
+			case "nickserv":
+				if ap != "" {
+					s.SendIRC("PRIVMSG NickServ :IDENTIFY " + ap)
+				}
+			case "nickserv_cmd":
+				if ap != "" {
+					s.SendIRC("NICKSERV IDENTIFY " + ap)
+				}
 			}
 			s.sendWS(map[string]any{"type": "connected", "nick": s.Nick, "session": s.ID})
 

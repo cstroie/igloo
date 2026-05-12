@@ -57,11 +57,14 @@ func setKeepalive(conn net.Conn) {
 	}
 }
 
-// Handshake sends the IRC registration sequence: PASS (if pass is non-empty),
-// NICK, and USER. It must be called immediately after Dial, before the server
-// starts sending numerics.
-func Handshake(conn net.Conn, nick, user, realname, pass string) error {
-	lines := []string{}
+// Handshake sends the IRC registration sequence. capReq, if non-empty, is sent
+// as "CAP REQ :<capReq>" before NICK/USER to start capability negotiation.
+// pass is sent as a PASS command only when non-empty.
+func Handshake(conn net.Conn, nick, user, realname, pass, capReq string) error {
+	var lines []string
+	if capReq != "" {
+		lines = append(lines, "CAP REQ :"+capReq)
+	}
 	if pass != "" {
 		lines = append(lines, fmt.Sprintf("PASS %s", pass))
 	}

@@ -69,12 +69,18 @@
           <input type="text" id="realname" placeholder="Your Name">
         </div>
         <div class="field">
-          <label>Password <span class="field-optional">(optional)</span></label>
-          <input type="password" id="pass" placeholder="server password" autocomplete="off">
+          <label>Authentication</label>
+          <select id="auth-method">
+            <option value="none">None</option>
+            <option value="sasl">SASL PLAIN</option>
+            <option value="nickserv">NickServ IDENTIFY</option>
+            <option value="nickserv_cmd">NickServ (NICKSERV command)</option>
+            <option value="server">Server password (/PASS)</option>
+          </select>
         </div>
-        <div class="field">
-          <label>NickServ password <span class="field-optional">(optional)</span></label>
-          <input type="password" id="nickserv-pass" placeholder="leave blank if not registered" autocomplete="current-password">
+        <div class="field hidden" id="pass-field">
+          <label>Password</label>
+          <input type="password" id="pass" placeholder="password" autocomplete="current-password">
         </div>
         <button type="submit" id="connect-btn">Connect</button>
       </form>

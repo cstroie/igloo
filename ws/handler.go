@@ -30,7 +30,7 @@ type inMsg struct {
 	TLS        bool   `json:"tls"`
 	SelfSigned bool   `json:"selfsigned"`
 	Pass       string `json:"pass"`
-	NSPass     string `json:"nspass"`
+	AuthMethod string `json:"authmethod"`
 	Channel    string `json:"channel"`
 	Target     string `json:"target"`
 	Text       string `json:"text"`
@@ -109,7 +109,7 @@ func dispatch(s *session.Session, msg inMsg) error {
 				msg.Port = 6667
 			}
 		}
-		return s.Connect(msg.Server, msg.Port, msg.Nick, msg.RealName, msg.TLS, msg.SelfSigned, msg.Pass, msg.NSPass)
+		return s.Connect(msg.Server, msg.Port, msg.Nick, msg.RealName, msg.TLS, msg.SelfSigned, msg.Pass, msg.AuthMethod)
 	case "disconnect":
 		reason := msg.Text
 		if reason == "" {
