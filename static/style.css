@@ -20,6 +20,26 @@
   --users-w:   160px;
 }
 
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg:        #f4f4f5;
+    --bg2:       #e4e4e7;
+    --bg3:       #d4d4d8;
+    --border:    #a1a1aa;
+    --accent:    #6d4af7;
+    --accent2:   #4930d4;
+    --text:      #18181b;
+    --text-dim:  #71717a;
+    --text-head: #52525b;
+    --mention:   #b45309;
+    --error:     #dc2626;
+    --join:      #16a34a;
+    --part:      #dc2626;
+    --notice:    #2563eb;
+    --me:        #9333ea;
+  }
+}
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body { height: 100%; font-family: var(--font-mono); background: var(--bg); color: var(--text); font-size: 14px; }
