@@ -586,6 +586,30 @@ function openDM(nick) {
   setActive(nick);
 }
 
+function parseWhois(lines) {
+  const w = { realname:'', host:'', ident:'', server:'', location:'', idle:'',
+               account:'', channels:[], secure:false, ircop:false, bot:false };
+  for (const l of lines) {
+    let m;
+    if ((m = l.match(/^\S+ \((.+?)@(.+?)\): (.+)/)))
+      { w.ident = m[1]; w.host = m[2]; w.realname = m[3]; }
+    else if ((m = l.match(/in: (.+)/)))
+      w.channels = m[1].trim().split(/\s+/);
+    else if ((m = l.match(/via (\S+) \((.+)\)/)))
+      { w.server = m[1]; w.location = m[2]; }
+    else if ((m = l.match(/idle ([^,]+)/)))
+      w.idle = m[1];
+    else if ((m = l.match(/logged in as (\S+)/)))
+      w.account = m[1];
+    else if (l.includes('secure connection'))  w.secure = true;
+    else if (l.includes('IRC operator'))       w.ircop  = true;
+  }
+  // Bot heuristic: ident starts with ~ (no identd) combined with nick ending in bot/serv/chanserv etc,
+  // OR if realname/nick contains 'bot' (case-insensitive)
+  w.bot = /bot|serv/i.test(w.realname) || (w.ident.startsWith('~') && /bot|serv/i.test(w.host + w.account));
+  return w;
+}
+
 function renderUserlist() {
   const header = $('userlist-header');
   userlist.innerHTML = '';
@@ -595,24 +619,40 @@ function renderUserlist() {
     const nc   = nickColor(nick);
     header.textContent = 'User';
 
-    // avatar / nick
     const card = document.createElement('div');
     card.className = 'dm-card';
+
+    const lines = state.whoisCache.get(nick) || [];
+    const w = lines.length ? parseWhois(lines) : null;
+
+    // badges
+    const badges = [];
+    if (w?.secure) badges.push('<span class="user-badge badge-secure" title="Secure connection">🔒 Secure</span>');
+    if (w?.ircop)  badges.push('<span class="user-badge badge-ircop"  title="IRC Operator">⚡ IRCop</span>');
+    if (w?.account) badges.push(`<span class="user-badge badge-identified" title="Identified as ${escHtml(w.account)}">✓ ${escHtml(w.account)}</span>`);
+    if (w?.bot)    badges.push('<span class="user-badge badge-bot"    title="Likely a bot">🤖 Bot</span>');
+
     card.innerHTML = `
       <div class="dm-avatar" style="background:${nc || 'var(--accent)'}">
-        ${escHtml(nick[0].toUpperCase())}
+        ${w?.bot ? '🤖' : escHtml(nick[0].toUpperCase())}
       </div>
       <div class="dm-nick" style="${nc ? `color:${nc}` : ''}">${escHtml(nick)}</div>
+      ${badges.length ? `<div class="dm-badges">${badges.join('')}</div>` : ''}
       <div class="dm-actions">
         <button class="dm-action-btn" id="whois-btn">⊕ Info</button>
         <button class="dm-action-btn danger" id="close-dm-btn">✕ Close</button>
       </div>`;
 
-    const lines = state.whoisCache.get(nick);
-    if (lines?.length) {
+    if (w && (w.realname || w.host || w.server || w.idle || w.channels.length)) {
       const info = document.createElement('div');
       info.className = 'dm-whois';
-      info.innerHTML = lines.map(l => `<div>${escHtml(l)}</div>`).join('');
+      const rows = [];
+      if (w.realname) rows.push(`<div class="wi-row"><span class="wi-key">Name</span><span class="wi-val">${escHtml(w.realname)}</span></div>`);
+      if (w.host)     rows.push(`<div class="wi-row"><span class="wi-key">Host</span><span class="wi-val">${escHtml(w.ident+'@'+w.host)}</span></div>`);
+      if (w.server)   rows.push(`<div class="wi-row"><span class="wi-key">Server</span><span class="wi-val">${escHtml(w.server)}${w.location ? ' · '+escHtml(w.location) : ''}</span></div>`);
+      if (w.idle)     rows.push(`<div class="wi-row"><span class="wi-key">Idle</span><span class="wi-val">${escHtml(w.idle)}</span></div>`);
+      if (w.channels.length) rows.push(`<div class="wi-row"><span class="wi-key">In</span><span class="wi-val wi-chans">${w.channels.map(c => `<span class="wi-chan">${escHtml(c)}</span>`).join('')}</span></div>`);
+      info.innerHTML = rows.join('');
       card.appendChild(info);
     }
 

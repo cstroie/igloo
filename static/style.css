@@ -328,13 +328,27 @@ html, body { height: 100%; font-family: var(--font-mono); background: var(--bg);
 }
 .dm-action-btn:hover { color: var(--text); border-color: var(--accent); background: var(--accent-bg); }
 .dm-action-btn.danger:hover { color: var(--error); border-color: var(--error); background: rgba(248,113,113,0.08); }
-.dm-whois {
-  width: 100%; margin-top: 8px;
-  border-top: 1px solid var(--border); padding-top: 10px;
-  display: flex; flex-direction: column; gap: 4px;
-  font-size: 0.75rem; color: var(--text-dim); word-break: break-word;
+.dm-badges { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-top: 2px; }
+.user-badge {
+  font-size: 0.68rem; padding: 2px 7px; border-radius: 10px;
+  border: 1px solid; white-space: nowrap;
 }
-.dm-whois div { line-height: 1.4; }
+.badge-secure     { color: var(--join);    border-color: var(--join);    background: rgba(52,211,153,0.1); }
+.badge-identified { color: var(--notice);  border-color: var(--notice);  background: rgba(96,165,250,0.1); }
+.badge-ircop      { color: var(--mention); border-color: var(--mention); background: rgba(245,158,11,0.1); }
+.badge-bot        { color: var(--me);      border-color: var(--me);      background: rgba(192,132,252,0.1); }
+
+.dm-whois {
+  width: 100%; margin-top: 10px;
+  border-top: 1px solid var(--border); padding-top: 10px;
+  display: flex; flex-direction: column; gap: 5px;
+  font-size: 0.74rem; word-break: break-word;
+}
+.wi-row { display: flex; gap: 6px; align-items: baseline; }
+.wi-key { color: var(--text-dim); flex-shrink: 0; width: 44px; text-align: right; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.4px; }
+.wi-val { color: var(--text); flex: 1; line-height: 1.4; }
+.wi-chans { display: flex; flex-wrap: wrap; gap: 3px; }
+.wi-chan { background: var(--accent-bg); color: var(--accent); border-radius: 3px; padding: 1px 5px; font-size: 0.7rem; }
 
 /* scrollbars */
 ::-webkit-scrollbar { width: 6px; }
