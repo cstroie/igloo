@@ -315,6 +315,13 @@ html, body { height: 100%; font-family: var(--font-mono); background: var(--bg);
   ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.35); }
 }
 
+.msg .text a { color: var(--notice); text-underline-offset: 2px; }
+.msg .text a:hover { opacity: 0.85; }
+.msg .text code {
+  background: var(--bg3); border-radius: 3px; padding: 1px 5px;
+  font-size: 0.88em; color: var(--me);
+}
+
 .session-break {
   text-align: center; color: var(--text-dim); font-size: 0.72rem;
   padding: 8px 0; opacity: 0.5; user-select: none;

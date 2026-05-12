@@ -506,7 +506,7 @@ function buildMsgEl(m, target) {
     <span class="ts">${ts}</span>
     <span class="body">
       <span class="nick-col ${self ? 'self' : ''}" style="${nc ? `color:${nc}` : ''}">${escHtml(m.nick || '')}</span>
-      <span class="text">${linkify(escHtml(m.text))}</span>
+      <span class="text">${renderText(m.text)}</span>
     </span>`;
   return el;
 }
@@ -728,4 +728,67 @@ function escHtml(s) {
 
 function linkify(s) {
   return s.replace(/(https?:\/\/[^\s<>"]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+}
+
+// IRC mIRC color palette (indices 0-15)
+const MIRC_COLORS = [
+  '#ffffff','#000000','#00007f','#009300','#ff0000','#7f0000',
+  '#9c009c','#fc7f00','#ffff00','#00fc00','#009393','#00ffff',
+  '#0000fc','#ff00ff','#7f7f7f','#d2d2d2',
+];
+
+function applyMarkdown(s) {
+  return s
+    .replace(/~~(.+?)~~/g,               '<s>$1</s>')
+    .replace(/\*\*(.+?)\*\*/g,           '<b>$1</b>')
+    .replace(/__(.+?)__/g,               '<b>$1</b>')
+    .replace(/\*([^*\s][^*\n]*?)\*/g,    '<i>$1</i>')
+    .replace(/_([^_\s][^_\n]*?)_/g,      '<i>$1</i>')
+    .replace(/`([^`\n]+)`/g,             '<code>$1</code>');
+}
+
+function renderText(raw) {
+  let bold=false, italic=false, under=false, strike=false, mono=false;
+  let fg=null, bg=null;
+  let out='', buf='', i=0;
+
+  const flush = () => {
+    if (!buf) return;
+    let s = linkify(applyMarkdown(escHtml(buf)));
+    const st = [];
+    if (bold)   st.push('font-weight:bold');
+    if (italic) st.push('font-style:italic');
+    if (under)  st.push('text-decoration:underline');
+    if (strike) st.push('text-decoration:line-through');
+    if (fg)     st.push(`color:${fg}`);
+    if (bg)     st.push(`background:${bg};padding:0 2px;border-radius:2px`);
+    if (mono)   s = `<code>${escHtml(buf)}</code>`;
+    else if (st.length) s = `<span style="${st.join(';')}">${s}</span>`;
+    out += s;
+    buf = '';
+  };
+
+  while (i < raw.length) {
+    const c = raw[i];
+    if (c === '\x02') { flush(); bold   = !bold;   i++; }
+    else if (c === '\x1D') { flush(); italic = !italic; i++; }
+    else if (c === '\x1F') { flush(); under  = !under;  i++; }
+    else if (c === '\x1E') { flush(); strike = !strike; i++; }
+    else if (c === '\x11') { flush(); mono   = !mono;   i++; }
+    else if (c === '\x0F') { flush(); bold=italic=under=strike=mono=false; fg=bg=null; i++; }
+    else if (c === '\x03') {
+      flush(); i++;
+      let fgS='', bgS='';
+      while (i < raw.length && /\d/.test(raw[i]) && fgS.length < 2) fgS += raw[i++];
+      if (raw[i] === ',') {
+        i++;
+        while (i < raw.length && /\d/.test(raw[i]) && bgS.length < 2) bgS += raw[i++];
+      }
+      fg = fgS !== '' ? (MIRC_COLORS[+fgS] ?? null) : null;
+      bg = bgS !== '' ? (MIRC_COLORS[+bgS] ?? null) : null;
+      if (fgS === '') { fg = null; bg = null; }
+    } else { buf += c; i++; }
+  }
+  flush();
+  return out;
 }
