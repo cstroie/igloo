@@ -209,6 +209,12 @@ $('auth-method').addEventListener('change', function() {
 });
 
 function openWS(server, port, nick, realname, tls, selfsigned, authMethod, pass) {
+  // close any existing socket before opening a new one
+  if (state.ws) {
+    state.ws.onclose = null; // prevent the close handler from firing
+    state.ws.close();
+    state.ws = null;
+  }
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
   const ws = new WebSocket(`${proto}://${location.host}/ws`);
   state.ws = ws;
