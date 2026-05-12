@@ -20,7 +20,8 @@
   --sidebar-w: 210px;
   --users-w:   170px;
   --header-h:  48px;
-  --panel-shadow: 2px 0 16px rgba(0,0,0,0.35);
+  --panel-shadow:       2px 0 16px rgba(0,0,0,0.35);
+  --panel-shadow-left: -2px 0 16px rgba(0,0,0,0.35);
 }
 
 @media (prefers-color-scheme: light) {
@@ -41,7 +42,8 @@
     --part:      #dc2626;
     --notice:    #2563eb;
     --me:        #7c3aed;
-    --panel-shadow: 2px 0 12px rgba(0,0,0,0.1);
+    --panel-shadow:       2px 0 12px rgba(0,0,0,0.1);
+    --panel-shadow-left: -2px 0 12px rgba(0,0,0,0.1);
   }
 }
 
@@ -275,8 +277,9 @@ html, body { height: 100%; font-family: var(--font-mono); background: var(--bg);
 
 #userlist-panel {
   width: var(--users-w); background: var(--bg2);
-  box-shadow: calc(-1 * var(--panel-shadow, 2px)) 0 16px rgba(0,0,0,0.35);
+  box-shadow: var(--panel-shadow-left);
   display: flex; flex-direction: column; flex-shrink: 0;
+  z-index: 1;
 }
 #userlist-header {
   display: flex; align-items: center;
