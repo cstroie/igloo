@@ -1,5 +1,5 @@
 PREFIX      ?= /usr/local
-BINARY      := igloo
+BINARY      := wirgloo
 SYSTEMD_DIR ?= /etc/systemd/system
 
 .PHONY: all build install install-service uninstall uninstall-service clean

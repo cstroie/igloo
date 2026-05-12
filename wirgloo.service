@@ -1,9 +1,9 @@
 [Unit]
-Description=igloo web IRC client
+Description=wirgloo web IRC client
 After=network.target
 
 [Service]
-ExecStart=/usr/local/bin/igloo
+ExecStart=/usr/local/bin/wirgloo
 Restart=on-failure
 RestartSec=5
 DynamicUser=yes
