@@ -633,6 +633,18 @@ function buildMsgEl(m, target) {
 
   const self = m.nick === state.nick;
   const nc = nickColor(m.nick);
+
+  if (m.text && m.text.startsWith('/me ')) {
+    const action = m.text.slice(4);
+    el.className += ' action';
+    el.innerHTML = `
+      <span class="ts">${ts}</span>
+      <span class="body">
+        <span class="action-text" style="${nc ? `color:${nc}` : ''}">* <b>${escHtml(m.nick || '')}</b> ${highlightNicks(renderText(action), state.channels.get(state.active)?.nicks)}</span>
+      </span>`;
+    return el;
+  }
+
   el.innerHTML = `
     <span class="ts">${ts}</span>
     <span class="body">
