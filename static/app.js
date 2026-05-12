@@ -1104,6 +1104,10 @@ $('list-sort-bar').addEventListener('click', e => {
 });
 
 // ── Sidebar buttons ───────────────────────────────────────────────────────────
+$('list-btn').addEventListener('click', () => {
+  send({ type: 'raw', line: 'LIST' });
+});
+
 $('join-btn').addEventListener('click', () => {
   const ch = prompt('Channel to join:');
   if (ch) send({ type: 'join', channel: ch.startsWith('#') ? ch : '#' + ch });
