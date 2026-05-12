@@ -534,6 +534,7 @@ function removeChannel(target) {
 
 function setActive(target) {
   if (!target || !state.channels.has(target)) return;
+  openPanel(null); // close any open mobile panel
   state.active = target;
   const ch = state.channels.get(target);
   ch.unread  = 0;
@@ -856,6 +857,22 @@ function renderUserlist() {
 }
 
 // ── Input / commands ──────────────────────────────────────────────────────────
+// ── Mobile panel toggles ─────────────────────────────────────────────────────
+function openPanel(panel) {
+  document.getElementById('sidebar').classList.toggle('open', panel === 'sidebar');
+  document.getElementById('userlist-panel').classList.toggle('open', panel === 'userlist');
+  const backdrop = $('panel-backdrop');
+  backdrop.classList.toggle('visible', !!panel);
+}
+$('panel-backdrop').addEventListener('click', () => openPanel(null));
+$('sidebar-toggle').addEventListener('click', () => {
+  const isOpen = document.getElementById('sidebar').classList.contains('open');
+  openPanel(isOpen ? null : 'sidebar');
+});
+$('userlist-toggle').addEventListener('click', () => {
+  const isOpen = document.getElementById('userlist-panel').classList.contains('open');
+  openPanel(isOpen ? null : 'userlist');
+});
 $('send-btn').addEventListener('click', sendInput);
 input.addEventListener('keydown', e => {
   if (e.key === 'Enter') { sendInput(); tabComplete.reset(); }
