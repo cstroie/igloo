@@ -106,6 +106,14 @@ $('delete-profile-btn').addEventListener('click', () => {
   const nick = localStorage.getItem('igloo_nick');
   if (nick) $('nick').value = nick;
   renderSavedProfiles();
+  const lastNet = localStorage.getItem('igloo_last_network');
+  if (lastNet) {
+    const sel = $('network');
+    if ([...sel.options].some(o => o.value === lastNet)) {
+      sel.value = lastNet;
+      applyNetworkSelection(lastNet);
+    }
+  }
 })();
 
 // ── Connect form ─────────────────────────────────────────────────────────────
@@ -121,6 +129,7 @@ connectForm.addEventListener('submit', e => {
   if (!server || !nick) return;
   localStorage.setItem('igloo_nick', nick);
   const netVal = $('network').value;
+  localStorage.setItem('igloo_last_network', netVal);
   if (netVal === 'custom' || netVal.startsWith('saved:')) {
     saveProfile({ server, port, tls, nick });
     renderSavedProfiles();
