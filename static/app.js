@@ -15,6 +15,9 @@ const state = {
   ignored: new Set(),    // client-side ignored nicks
   listItems: [],         // raw {channel, count, topic} from LIST
   listSort: 'users',     // 'name' | 'users' | 'topic'
+  // prefix support — populated from server 005 PREFIX token
+  prefixRank:  {'~':0,'&':1,'@':2,'%':3,'+':4}, // symbol → rank (lower = higher privilege)
+  prefixClass: {'~':'owner','&':'admin','@':'op','%':'halfop','+':'voice'},
 };
 
 let reconnectDelay = 1000;
@@ -227,6 +230,23 @@ function openWS(server, port, nick, realname, tls, selfsigned, authMethod, pass)
 // ── Message handler ───────────────────────────────────────────────────────────
 function handle(msg) {
   switch (msg.type) {
+    case 'isupport_prefix': {
+      // Parse PREFIX=(modes)symbols, e.g. "(qaohv)~&@%+"
+      const m = msg.value.match(/^\(([^)]+)\)(.+)$/);
+      if (m) {
+        const syms = m[2];
+        state.prefixRank  = {};
+        state.prefixClass = {};
+        const names = ['owner','admin','op','halfop','voice'];
+        [...syms].forEach((sym, i) => {
+          state.prefixRank[sym]  = i;
+          // map to a CSS class name: use known names for common positions, else "priv{i}"
+          state.prefixClass[sym] = names[i] ?? `priv${i}`;
+        });
+      }
+      break;
+    }
+
     case 'connected':
       state.connected = true;
       state.sessionId = msg.session;
@@ -404,9 +424,11 @@ function handle(msg) {
       const ch = state.channels.get(msg.channel);
       if (ch) {
         if (!ch._namesAccum) ch._namesAccum = new Map();
+        const allPrefixSyms = new RegExp(`^[${Object.keys(state.prefixRank).map(s => s.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')).join('')}]+`);
         msg.nicks.forEach(n => {
-          const prefix = /^[@+~&%]/.test(n) ? n[0] : '';
-          ch._namesAccum.set(n.replace(/^[@+~&%]/, ''), prefix);
+          const pm = n.match(allPrefixSyms);
+          const prefix = pm ? pm[0] : ''; // keep all prefix chars (multi-prefix)
+          ch._namesAccum.set(n.slice(prefix.length), prefix);
         });
       }
       break;
@@ -770,17 +792,19 @@ function renderUserlist() {
   if (!ch) return;
   const count = ch.nicks.size;
   header.textContent = count ? `${count} Users` : 'Users';
-  const prefixRank = {'~':0,'&':1,'@':2,'%':3,'+':4};
-  const prefixClass = {'~':'owner','&':'admin','@':'op','%':'halfop','+':'voice'};
   const sorted = [...ch.nicks.entries()].sort(([a, pa], [b, pb]) => {
-    const rank = p => prefixRank[p] ?? 5;
-    return rank(pa) - rank(pb) || a.toLowerCase().localeCompare(b.toLowerCase());
+    // rank by highest-privilege prefix char in the string
+    const bestRank = p => Math.min(...([...p].map(c => state.prefixRank[c] ?? 99)), 99);
+    return bestRank(pa) - bestRank(pb) || a.toLowerCase().localeCompare(b.toLowerCase());
   });
   sorted.forEach(([nick, prefix]) => {
+    // highest-privilege char determines the CSS class
+    const topChar = [...prefix].sort((a, b) => (state.prefixRank[a]??99) - (state.prefixRank[b]??99))[0];
+    const cls = topChar ? (state.prefixClass[topChar] || '') : '';
     const el = document.createElement('div');
-    el.className = 'user-item' + (prefixClass[prefix] ? ' ' + prefixClass[prefix] : '');
+    el.className = 'user-item' + (cls ? ' ' + cls : '');
     const nc = nickColor(nick);
-    el.innerHTML = `<span class="user-nick" style="${nc ? `color:${nc}` : ''}">${escHtml((prefix || ' ') + nick)}</span>` +
+    el.innerHTML = `<span class="user-nick" style="${nc ? `color:${nc}` : ''}">${escHtml((topChar || ' ') + nick)}</span>` +
       (nick !== state.nick ? `<button class="dm-btn" title="Message ${escHtml(nick)}">✉</button>` : '');
     el.querySelector('.dm-btn')?.addEventListener('click', e => {
       e.stopPropagation();

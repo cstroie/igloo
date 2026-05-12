@@ -147,12 +147,13 @@ func (s *Session) Connect(server string, port int, nick, realname string, useTLS
 	s.mu.Unlock()
 
 	serverPass := ""
-	capReq := ""
+	// Always request multi-prefix; add sasl if that auth method is chosen.
+	capReq := "multi-prefix"
 	switch authMethod {
 	case "server":
 		serverPass = pass
 	case "sasl":
-		capReq = "sasl"
+		capReq = "multi-prefix sasl"
 	}
 
 	if err := irc.Handshake(conn, nick, nick, realname, serverPass, capReq); err != nil {
@@ -238,12 +239,17 @@ func (s *Session) ircLoop(lines <-chan string) {
 			if len(msg.Params) >= 2 {
 				sub = msg.Params[len(msg.Params)-2]
 			}
-			s.mu.Lock()
-			am := s.authMethod
-			s.mu.Unlock()
-			if sub == "ACK" && am == "sasl" && strings.Contains(msg.Trailing+" "+strings.Join(msg.Params, " "), "sasl") {
-				s.writeNow("AUTHENTICATE PLAIN")
-			} else {
+			if sub == "ACK" {
+				s.mu.Lock()
+				am := s.authMethod
+				s.mu.Unlock()
+				acked := msg.Trailing + " " + strings.Join(msg.Params, " ")
+				if am == "sasl" && strings.Contains(acked, "sasl") {
+					s.writeNow("AUTHENTICATE PLAIN")
+				} else {
+					s.writeNow("CAP END")
+				}
+			} else if sub == "NAK" {
 				s.writeNow("CAP END")
 			}
 
@@ -290,6 +296,14 @@ func (s *Session) ircLoop(lines <-chan string) {
 				}
 			}
 			s.sendWS(map[string]any{"type": "connected", "nick": s.Nick, "session": s.ID})
+
+		case "005": // RPL_ISUPPORT — server feature tokens
+			for _, token := range msg.Params[1:] { // skip target nick at Params[0]
+				if strings.HasPrefix(token, "PREFIX=") {
+					// PREFIX=(qaohv)~&@%+ — send raw value to browser
+					s.sendWS(map[string]any{"type": "isupport_prefix", "value": token[7:]})
+				}
+			}
 
 		case "PRIVMSG":
 			if len(msg.Params) < 2 {
