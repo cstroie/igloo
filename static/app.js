@@ -74,8 +74,10 @@ function renderSavedProfiles() {
 function applyNetworkSelection(value) {
   const net = NETWORKS[value] ?? loadProfiles().find(p => profileKey(p) === value);
   const isCustom = !net;
+  const isSaved  = value.startsWith('saved:');
   $('server-field').classList.toggle('hidden', !isCustom);
   $('server').required = isCustom;
+  $('delete-profile-btn').classList.toggle('hidden', !isSaved);
   if (net) {
     $('server').value = net.server;
     $('port').value   = net.port;
@@ -86,6 +88,18 @@ function applyNetworkSelection(value) {
 }
 
 $('network').addEventListener('change', function () { applyNetworkSelection(this.value); });
+
+$('delete-profile-btn').addEventListener('click', () => {
+  const val = $('network').value;
+  if (!val.startsWith('saved:')) return;
+  const profiles = loadProfiles();
+  const idx = profiles.findIndex(p => profileKey(p) === val);
+  if (idx !== -1) profiles.splice(idx, 1);
+  localStorage.setItem('igloo_profiles', JSON.stringify(profiles));
+  renderSavedProfiles();
+  $('network').value = 'libera';
+  applyNetworkSelection('libera');
+});
 
 // Restore last nick and saved profiles on page load.
 (function init() {

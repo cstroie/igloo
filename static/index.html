@@ -17,6 +17,7 @@
       <form id="connect-form">
         <div class="field">
           <label>Network</label>
+          <div class="select-row">
           <select id="network">
             <option value="libera">Libera.Chat</option>
             <option value="oftc">OFTC</option>
@@ -28,6 +29,8 @@
             <option value="ircnet">IRCnet</option>
             <option value="custom">Custom…</option>
           </select>
+          <button type="button" id="delete-profile-btn" class="hidden" title="Delete saved profile">×</button>
+          </div>
         </div>
         <div class="field hidden" id="server-field">
           <label>Server</label>
