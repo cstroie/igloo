@@ -98,6 +98,15 @@ function handle(msg) {
       });
       break;
 
+    case 'connect_error':
+      state.channels.clear();
+      state.active = null;
+      document.title = 'igloo';
+      chatScreen.classList.add('hidden');
+      connectScreen.classList.remove('hidden');
+      showConnectError(msg.text);
+      break;
+
     case 'session_expired':
       state.sessionId = null;
       state.connected = false;

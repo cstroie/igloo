@@ -124,6 +124,7 @@ func (s *Session) Connect(server string, port int, nick string, useTLS, selfSign
 	conn, err := irc.Dial(server, port, useTLS, selfSigned)
 	if err != nil {
 		logger.L.Error("IRC dial failed", "session", s.ID, "server", server, "err", err)
+		s.sendWS(map[string]any{"type": "connect_error", "text": err.Error()})
 		return err
 	}
 	s.mu.Lock()
@@ -135,6 +136,7 @@ func (s *Session) Connect(server string, port int, nick string, useTLS, selfSign
 	if err := irc.Handshake(conn, nick, nick, "igloo user", pass); err != nil {
 		conn.Close()
 		logger.L.Error("IRC handshake failed", "session", s.ID, "err", err)
+		s.sendWS(map[string]any{"type": "connect_error", "text": err.Error()})
 		return err
 	}
 
