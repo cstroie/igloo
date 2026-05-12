@@ -9,12 +9,12 @@ import (
 	"net/http"
 
 	"github.com/gorilla/websocket"
-	"igloo/logger"
-	"igloo/session"
+	"wirgloo/logger"
+	"wirgloo/session"
 )
 
 // upgrader promotes HTTP connections to WebSocket. CheckOrigin is permissive
-// because igloo is a self-hosted tool where the operator controls the origin.
+// because wirgloo is a self-hosted tool where the operator controls the origin.
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }

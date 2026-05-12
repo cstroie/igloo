@@ -17,8 +17,8 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"igloo/irc"
-	"igloo/logger"
+	"wirgloo/irc"
+	"wirgloo/logger"
 )
 
 const wsReconnectWindow = 60 * time.Second // how long to keep an IRC session alive without a WS
@@ -569,7 +569,7 @@ func (s *Session) pingLoop() {
 				s.Close()
 				return
 			}
-			s.writeNow("PING :igloo")
+			s.writeNow("PING :wirgloo")
 			pingSent = time.Now()
 		}
 	}

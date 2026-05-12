@@ -1,4 +1,4 @@
-// igloo is a web IRC client. It serves a single-page browser UI and proxies
+// wirgloo is a web IRC client. It serves a single-page browser UI and proxies
 // IRC connections over WebSocket, so users can connect to any IRC network
 // from a plain browser without installing anything.
 package main
@@ -11,9 +11,9 @@ import (
 	"net/http"
 	"os"
 
-	"igloo/logger"
-	"igloo/session"
-	"igloo/ws"
+	"wirgloo/logger"
+	"wirgloo/session"
+	"wirgloo/ws"
 )
 
 //go:embed static/*
@@ -50,7 +50,7 @@ func main() {
 		http.Handle("/", http.FileServer(http.FS(sub)))
 	}
 
-	logger.L.Info("igloo starting", "addr", *addr)
+	logger.L.Info("wirgloo starting", "addr", *addr)
 	if err := http.ListenAndServe(*addr, nil); err != nil {
 		logger.L.Error("server error", "err", err)
 		os.Exit(1)

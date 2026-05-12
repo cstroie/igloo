@@ -1,4 +1,4 @@
-module igloo
+module wirgloo
 
 go 1.26.2
 

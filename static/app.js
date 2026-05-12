@@ -53,14 +53,14 @@ const NETWORKS = {
 
 // ── Saved profiles ────────────────────────────────────────────────────────────
 function loadProfiles() {
-  try { return JSON.parse(localStorage.getItem('igloo_profiles') || '[]'); }
+  try { return JSON.parse(localStorage.getItem('wirgloo_profiles') || '[]'); }
   catch { return []; }
 }
 
 function saveProfile(profile) {
   const profiles = loadProfiles().filter(p => p.server !== profile.server || p.port !== profile.port);
   profiles.unshift(profile);
-  localStorage.setItem('igloo_profiles', JSON.stringify(profiles));
+  localStorage.setItem('wirgloo_profiles', JSON.stringify(profiles));
 }
 
 function profileKey(p) { return `saved:${p.server}:${p.port}`; }
@@ -106,7 +106,7 @@ $('delete-profile-btn').addEventListener('click', () => {
   const profiles = loadProfiles();
   const idx = profiles.findIndex(p => profileKey(p) === val);
   if (idx !== -1) profiles.splice(idx, 1);
-  localStorage.setItem('igloo_profiles', JSON.stringify(profiles));
+  localStorage.setItem('wirgloo_profiles', JSON.stringify(profiles));
   renderSavedProfiles();
   $('network').value = 'libera';
   applyNetworkSelection('libera');
@@ -114,12 +114,12 @@ $('delete-profile-btn').addEventListener('click', () => {
 
 // Restore last nick, saved profiles, and ignore list on page load.
 (function init() {
-  const nick = localStorage.getItem('igloo_nick');
+  const nick = localStorage.getItem('wirgloo_nick');
   if (nick) $('nick').value = nick;
-  const rn = localStorage.getItem('igloo_realname');
+  const rn = localStorage.getItem('wirgloo_realname');
   if (rn) $('realname').value = rn;
   renderSavedProfiles();
-  const lastNet = localStorage.getItem('igloo_last_network');
+  const lastNet = localStorage.getItem('wirgloo_last_network');
   if (lastNet) {
     const sel = $('network');
     if ([...sel.options].some(o => o.value === lastNet)) {
@@ -127,23 +127,23 @@ $('delete-profile-btn').addEventListener('click', () => {
       applyNetworkSelection(lastNet);
     }
   }
-  const lastAuth = localStorage.getItem('igloo_auth_method');
+  const lastAuth = localStorage.getItem('wirgloo_auth_method');
   if (lastAuth) {
     $('auth-method').value = lastAuth;
     $('pass-field').classList.toggle('hidden', lastAuth === 'none');
   }
   try {
-    const ig = JSON.parse(localStorage.getItem('igloo_ignored') || '[]');
+    const ig = JSON.parse(localStorage.getItem('wirgloo_ignored') || '[]');
     ig.forEach(n => state.ignored.add(n.toLowerCase()));
   } catch {}
 })();
 
 function saveIgnored() {
-  localStorage.setItem('igloo_ignored', JSON.stringify([...state.ignored]));
+  localStorage.setItem('wirgloo_ignored', JSON.stringify([...state.ignored]));
 }
 
 // ── Saved channel list ────────────────────────────────────────────────────────
-function channelsKey(server) { return `igloo_channels_${server}`; }
+function channelsKey(server) { return `wirgloo_channels_${server}`; }
 
 function loadSavedChannels(server) {
   try { return JSON.parse(localStorage.getItem(channelsKey(server)) || '[]'); }
@@ -176,11 +176,11 @@ connectForm.addEventListener('submit', e => {
   const pass       = $('pass').value;
   const realname   = $('realname').value.trim() || nick;
   if (!server || !nick) return;
-  localStorage.setItem('igloo_nick', nick);
-  if ($('realname').value.trim()) localStorage.setItem('igloo_realname', $('realname').value.trim());
+  localStorage.setItem('wirgloo_nick', nick);
+  if ($('realname').value.trim()) localStorage.setItem('wirgloo_realname', $('realname').value.trim());
   const netVal = $('network').value;
-  localStorage.setItem('igloo_last_network', netVal);
-  localStorage.setItem('igloo_auth_method', authMethod);
+  localStorage.setItem('wirgloo_last_network', netVal);
+  localStorage.setItem('wirgloo_auth_method', authMethod);
   if (netVal === 'custom' || netVal.startsWith('saved:')) {
     saveProfile({ server, port, tls, nick });
     renderSavedProfiles();
@@ -269,7 +269,7 @@ function handle(msg) {
     case 'connect_error':
       state.channels.clear();
       state.active = null;
-      document.title = 'igloo';
+      document.title = 'wirgloo';
       chatScreen.classList.add('hidden');
       connectScreen.classList.remove('hidden');
       showConnectError(msg.text);
@@ -460,7 +460,7 @@ const LOG_MAX   = 200;
 const LOG_TYPES = new Set(['msg', 'me', 'notice', 'join', 'part', 'quit', 'system']);
 
 function logKey(server, target) {
-  return `igloo_log:${server}:${target}`;
+  return `wirgloo_log:${server}:${target}`;
 }
 
 function persistMsg(target, m) {
@@ -556,7 +556,7 @@ function renderListMessages() {
 
 function updateTitle() {
   const label = state.active === '*server*' ? state.server : state.active;
-  document.title = label ? `${label} — igloo` : 'igloo';
+  document.title = label ? `${label} — wirgloo` : 'wirgloo';
 }
 
 function bumpUnread(target, mention) {
@@ -1078,7 +1078,7 @@ function onDisconnect(reason) {
   state.sessionId = null;
   state.channels.clear();
   state.active = null;
-  document.title = 'igloo';
+  document.title = 'wirgloo';
   chatScreen.classList.add('hidden');
   connectScreen.classList.remove('hidden');
   showConnectError(reason);
