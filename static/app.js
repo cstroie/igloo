@@ -151,6 +151,16 @@ function loadSavedChannels(server) {
   catch { return []; }
 }
 
+function saveDMs(server) {
+  const dms = [...state.channels.keys()].filter(t => isDM(t));
+  localStorage.setItem(`wirgloo_dms_${server}`, JSON.stringify(dms));
+}
+
+function loadSavedDMs(server) {
+  try { return JSON.parse(localStorage.getItem(`wirgloo_dms_${server}`) || '[]'); }
+  catch { return []; }
+}
+
 function saveChannels(server) {
   const active = [...state.channels.keys()].filter(t => t.startsWith('#') && !state.channels.get(t).offline);
   localStorage.setItem(channelsKey(server), JSON.stringify(active));
@@ -162,6 +172,7 @@ function restoreSavedChannels(server) {
       state.channels.set(ch, { messages: [], nicks: new Map(), unread: 0, mention: false, topic: '', offline: true });
     }
   });
+  loadSavedDMs(server).forEach(nick => { if (!state.channels.has(nick)) ensureChannel(nick); });
   renderChannelList();
 }
 
@@ -341,7 +352,7 @@ function handle(msg) {
         const joiningCh = state.channels.get(msg.channel);
         if (joiningCh) joiningCh.offline = false;
         setActive(msg.channel);
-        saveChannels(state.server);
+        saveChannels(state.server); saveDMs(state.server);
       } else {
         ensureChannel(msg.channel);
         state.channels.get(msg.channel)?.nicks.set(msg.nick, '');
@@ -353,7 +364,7 @@ function handle(msg) {
     case 'part':
       if (msg.nick === state.nick) {
         removeChannel(msg.channel);
-        saveChannels(state.server);
+        saveChannels(state.server); saveDMs(state.server);
       } else {
         state.channels.get(msg.channel)?.nicks.delete(msg.nick);        renderUserlist();
         appendMsg(msg.channel, { type: 'part', nick: '', text: `← ${msg.nick} left ${msg.channel}` });
@@ -553,6 +564,7 @@ function removeChannel(target) {
     const next = state.channels.keys().next().value;
     setActive(next || null);
   }
+  if (isDM(target)) saveDMs(state.server);
   renderChannelList();
 }
 
@@ -671,7 +683,7 @@ function renderChannelList() {
         const t = ev.target.dataset.target;
         if (ch.offline) {
           removeChannel(t);
-          saveChannels(state.server);
+          saveChannels(state.server); saveDMs(state.server);
         } else if (t.startsWith('#')) {
           send({ type: 'part', channel: t });
         } else {
@@ -793,6 +805,7 @@ function isDM(target) {
 function openDM(nick) {
   ensureChannel(nick);
   setActive(nick);
+  saveDMs(state.server);
   // auto-fetch WHOIS so the DM card shows badges immediately
   if (!state.whoisCache.has(nick)) {
     state.pendingWhois = nick;

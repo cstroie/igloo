@@ -39,4 +39,4 @@
 - [ ] Multiple server connections
 - [x] away-notify CAP — live away status without polling WHOIS
 - [x] server-time CAP — use server timestamps instead of client clock
-- [ ] DM history stored per nick (currently only channel logs are persisted)
+- [x] DM history stored per nick (currently only channel logs are persisted)
