@@ -424,6 +424,29 @@ function handle(msg) {
       break;
     }
 
+    case 'away': {
+      // mark nick as away in whois cache for all channels they're in
+      state.whoisCache.forEach((lines, nick) => {
+        if (nick === msg.nick) {
+          if (!lines.includes('away: ' + msg.text)) lines.push('away: ' + msg.text);
+        }
+      });
+      // seed cache entry if not present so renderUserlist can show the badge
+      if (!state.whoisCache.has(msg.nick)) state.whoisCache.set(msg.nick, ['away: ' + msg.text]);
+      else {
+        const lines = state.whoisCache.get(msg.nick);
+        if (!lines.some(l => l.startsWith('away:'))) lines.push('away: ' + msg.text);
+      }
+      // show inline in active channel if we just messaged them
+      appendMsg(state.active || '*server*', { type: 'system', nick: '--', text: `${msg.nick} is away: ${msg.text}` });
+      renderUserlist();
+      break;
+    }
+
+    case 'away_status':
+      appendMsg(state.active || '*server*', { type: 'system', nick: '--', text: msg.text });
+      break;
+
     case 'motd':
       appendMsg('*server*', { type: 'motd', nick: '', text: msg.text });
       break;
@@ -895,7 +918,9 @@ function renderUserlist() {
     const prefixHtml = topChar
       ? `<span class="user-prefix">${escHtml(topChar)}</span>`
       : `<span class="user-prefix-none"> </span>`;
-    el.innerHTML = `<span class="user-nick">${prefixHtml}<span style="${nc ? `color:${nc}` : ''}">${escHtml(nick)}</span></span>` +
+    const cachedLines = state.whoisCache.get(nick) || [];
+    const isAway = cachedLines.some(l => l.startsWith('away:'));
+    el.innerHTML = `<span class="user-nick">${prefixHtml}<span style="${nc ? `color:${nc}` : ''}">${escHtml(nick)}</span>${isAway ? '<span class="user-away" title="Away">⏾</span>' : ''}</span>` +
       (nick !== state.nick ? `<button class="dm-btn" title="Message ${escHtml(nick)}">✉</button>` : '');
     el.querySelector('.dm-btn')?.addEventListener('click', e => {
       e.stopPropagation();

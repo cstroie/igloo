@@ -356,16 +356,16 @@ func (s *Session) ircLoop(lines <-chan string) {
 			logger.L.Info("NICK", "session", s.ID, "old", msg.Nick, "new", newNick)
 			s.sendWS(map[string]any{"type": "nick", "old": msg.Nick, "new": newNick})
 
-		case "301": // RPL_AWAY — received during WHOIS if target is away
+		case "301": // RPL_AWAY — target is away (received during WHOIS or when messaging someone away)
 			if len(msg.Params) >= 2 {
-				s.sendWS(map[string]any{"type": "whois", "text": "away: " + msg.Trailing})
+				s.sendWS(map[string]any{"type": "away", "nick": msg.Params[1], "text": msg.Trailing})
 			}
 
 		case "305": // RPL_UNAWAY
-			s.sendWS(map[string]any{"type": "whois", "text": "You are no longer away"})
+			s.sendWS(map[string]any{"type": "away_status", "away": false, "text": "You are no longer away"})
 
 		case "306": // RPL_NOWAWAY
-			s.sendWS(map[string]any{"type": "whois", "text": "You are now marked as away"})
+			s.sendWS(map[string]any{"type": "away_status", "away": true, "text": "You are now marked as away"})
 
 		case "311": // RPL_WHOISUSER
 			if len(msg.Params) < 4 {

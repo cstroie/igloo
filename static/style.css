@@ -321,6 +321,7 @@ html, body { height: 100%; font-family: var(--font-mono); background: var(--bg);
 .user-nick { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; display: flex; align-items: center; gap: 2px; }
 .user-prefix { font-weight: bold; flex-shrink: 0; min-width: 0.9em; }
 .user-prefix-none { flex-shrink: 0; min-width: 0.9em; }
+.user-away { color: var(--text-dim); font-size: 0.75rem; flex-shrink: 0; }
 .dm-btn {
   background: none; border: none; color: var(--text-dim); cursor: pointer;
   font-size: 0.8rem; padding: 0 3px; opacity: 0; transition: opacity 0.1s;
