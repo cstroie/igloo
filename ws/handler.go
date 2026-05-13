@@ -32,6 +32,7 @@ type inMsg struct {
 	Pass       string `json:"pass"`
 	AuthMethod string `json:"authmethod"`
 	Channel    string `json:"channel"`
+	Key        string `json:"key"`
 	Target     string `json:"target"`
 	Text       string `json:"text"`
 	Line       string `json:"line"`
@@ -117,6 +118,9 @@ func dispatch(s *session.Session, msg inMsg) error {
 		}
 		s.Quit(reason)
 	case "join":
+		if msg.Key != "" {
+			return s.SendIRC("JOIN " + msg.Channel + " " + msg.Key)
+		}
 		return s.SendIRC("JOIN " + msg.Channel)
 	case "part":
 		return s.SendIRC("PART " + msg.Channel)

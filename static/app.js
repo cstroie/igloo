@@ -1010,9 +1010,11 @@ function handleCommand(raw) {
   const [cmd, ...rest] = raw.split(' ');
   const arg = rest.join(' ');
   switch (cmd.toUpperCase()) {
-    case 'JOIN':
-      send({ type: 'join', channel: arg });
+    case 'JOIN': {
+      const [jchan, jkey] = arg.split(/\s+/, 2);
+      send({ type: 'join', channel: jchan, ...(jkey ? { key: jkey } : {}) });
       break;
+    }
     case 'PART':
       send({ type: 'part', channel: arg || state.active });
       break;
@@ -1122,7 +1124,7 @@ function handleCommand(raw) {
       break;
     case 'HELP': {
       const cmds = [
-        '/join <#channel>        — join a channel',
+        '/join <#channel> [key]  — join a channel',
         '/part [reason]          — leave current channel',
         '/nick <newnick>         — change nickname',
         '/msg <nick> [text]      — open DM / send message',

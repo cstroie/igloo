@@ -35,12 +35,12 @@
 - [x] Emoji icons per sidebar entry type (server, channel, DM, list)
 - [x] Real Name field on connect form
 - [x] CAP END / rate limiting / clean QUIT (play nice with IRCd)
+- [X] Browser notifications for mentions (Notification API)
+- [X] Mobile-responsive layout (sidebar collapses)
 
 ## Planned
 
-- [ ] Browser notifications for mentions (Notification API)
-- [ ] Mobile-responsive layout (sidebar collapses)
-- [ ] Channel key support (/join #channel key)
+- [x] Channel key support (/join #channel key)
 - [ ] Multiple server connections
 - [ ] away-notify CAP — live away status without polling WHOIS
 - [ ] server-time CAP — use server timestamps instead of client clock
