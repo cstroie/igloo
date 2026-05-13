@@ -471,25 +471,47 @@ html, body { height: 100%; font-family: var(--font-mono); background: var(--bg);
   .connect-box { width: 95vw; padding: 28px 20px; }
 
   /* ── Bubble layout (mobile only) ── */
-  .msg { display: block; padding: 2px 4px; }
+  .msg { display: block; padding: 1px 4px; }
   .msg:hover { background: none; }
-  .msg .ts      { display: none; }
+  .msg .ts       { display: none; }
   .msg .nick-col { display: none; }
-  .msg .body { flex-direction: column; gap: 2px; align-items: flex-start; }
-  .msg-header { display: block; font-size: 0.68rem; color: var(--text-dim); padding: 0 2px; }
-  .msg.grouped .msg-header { display: none; }
-  .msg.grouped { margin-top: 1px; }
-  .msg:not(.grouped) { margin-top: 8px; }
+  .msg .body { flex-direction: column; gap: 1px; align-items: flex-start; }
 
+  /* nick header: uses --nc-hue set inline by JS */
+  .msg-header {
+    display: block; font-size: 0.68rem; padding: 0 4px;
+    color: hsl(var(--nc-hue, 220), 55%, 68%);
+  }
+  .msg.grouped .msg-header { display: none; }
+
+  /* group spacing: clear gap before first message of a group, tight between grouped */
+  .msg:not(.grouped) { margin-top: 10px; }
+  .msg.grouped       { margin-top: 1px; }
+
+  /* bubble — tinted with nick hue (dark mode default) */
   .msg .text {
-    background: var(--bg3); border-radius: 0 12px 12px 12px;
-    padding: 6px 10px; max-width: 88%;
+    background: hsl(var(--nc-hue, 220), 18%, 20%);
+    border-radius: 4px 14px 14px 4px;
+    padding: 5px 10px; max-width: 88%;
     white-space: pre-wrap; word-break: break-word; flex: none;
   }
+  /* first in group: pointy top-left corner */
+  .msg:not(.grouped) .text { border-radius: 14px 14px 14px 4px; }
 
+  /* own messages */
   .msg.self .body { align-items: flex-end; }
-  .msg.self .text { border-radius: 12px 0 12px 12px; background: var(--accent-bg);
-    border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); }
+  .msg.self .text {
+    background: hsl(var(--nc-hue, 255), 35%, 28%);
+    border-radius: 14px 4px 4px 14px;
+  }
+  .msg.self:not(.grouped) .text { border-radius: 14px 14px 4px 14px; }
+
+  /* light mode overrides */
+  @media (prefers-color-scheme: light) {
+    .msg-header { color: hsl(var(--nc-hue, 220), 55%, 38%); }
+    .msg .text  { background: hsl(var(--nc-hue, 220), 40%, 93%); }
+    .msg.self .text { background: hsl(var(--nc-hue, 255), 45%, 84%); }
+  }
 
   /* server / status — no bubble, centred */
   .msg.system .body, .msg.join .body, .msg.part .body,

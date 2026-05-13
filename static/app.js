@@ -671,15 +671,17 @@ function renderChannelList() {
   });
 }
 
+const SYSTEM_TYPES = new Set(['system', 'join', 'part', 'quit', 'error', 'connecting', 'motd', 'notice', 'whois']);
+
 function renderMessages(target) {
   const ch = state.channels.get(target);
   messages.innerHTML = '';
   if (!ch) return;
-  let prevNick = null, prevTs = 0;
+  let prevNick = null, prevTs = 0, prevType = null;
   ch.messages.forEach(m => {
-    const grouped = canGroup(m, prevNick, prevTs);
+    const grouped = canGroup(m, prevNick, prevTs, prevType);
     messages.appendChild(buildMsgEl(m, target, grouped));
-    if (m.nick) { prevNick = m.nick; prevTs = m.ts || 0; }
+    prevNick = m.nick || null; prevTs = m.ts || 0; prevType = m.type || 'msg';
   });
   messages.scrollTop = messages.scrollHeight;
 }
@@ -694,17 +696,19 @@ function appendMsg(target, m) {
   if (target === state.active) {
     const atBottom = messages.scrollHeight - messages.scrollTop - messages.clientHeight < 60;
     const last = messages.lastElementChild;
-    const grouped = canGroup(m, last?.dataset.nick, parseFloat(last?.dataset.ts || 0));
+    const grouped = canGroup(m, last?.dataset.nick, parseFloat(last?.dataset.ts || 0), last?.dataset.msgtype);
     messages.appendChild(buildMsgEl(m, target, grouped));
     if (atBottom) messages.scrollTop = messages.scrollHeight;
   }
 }
 
-// Two messages can be grouped (header hidden) when same nick within 2 minutes.
-function canGroup(m, prevNick, prevTs) {
-  const groupable = ['msg', 'notice', 'motd', 'whois', 'connecting'];
+function canGroup(m, prevNick, prevTs, prevType) {
   const cls = m.type || 'msg';
-  return groupable.includes(cls) && m.nick && m.nick === prevNick && (m.ts - prevTs) < 120;
+  // consecutive system-type messages always collapse (different nicks each time)
+  if (SYSTEM_TYPES.has(cls) && SYSTEM_TYPES.has(prevType)) return true;
+  // chat messages group when same nick within 2 minutes
+  const chatGroupable = new Set(['msg', 'notice', 'motd', 'whois', 'connecting']);
+  return chatGroupable.has(cls) && m.nick && m.nick === prevNick && (m.ts - prevTs) < 120;
 }
 
 function buildMsgEl(m, target, grouped = false) {
@@ -713,6 +717,7 @@ function buildMsgEl(m, target, grouped = false) {
   el.className = `msg ${cls}`;
   const ts = m.ts ? fmtTime(m.ts) : fmtTime(Date.now() / 1000);
   if (m.nick) { el.dataset.nick = m.nick; el.dataset.ts = m.ts || 0; }
+  el.dataset.msgtype = cls;
   if (grouped) el.classList.add('grouped');
 
   if (cls === 'session-break') {
@@ -733,7 +738,9 @@ function buildMsgEl(m, target, grouped = false) {
   }
 
   const self = m.nick === state.nick;
-  const nc = nickColor(m.nick);
+  const nc   = nickColor(m.nick);
+  const hue  = nickHue(m.nick);
+  if (hue !== null) el.style.setProperty('--nc-hue', hue);
 
   if (m.text && m.text.startsWith('/me ')) {
     const action = m.text.slice(4);
@@ -749,11 +756,10 @@ function buildMsgEl(m, target, grouped = false) {
 
   if (self) el.classList.add('self');
 
-  const headerStyle = nc ? `color:${nc}` : '';
   el.innerHTML = `
     <span class="ts">${ts}</span>
     <span class="body">
-      <span class="msg-header" style="${headerStyle}">${escHtml(m.nick || '')} · ${ts}</span>
+      <span class="msg-header">${escHtml(m.nick || '')} · ${ts}</span>
       <span class="nick-col ${self ? 'self' : ''}" style="${nc ? `color:${nc}` : ''}">${escHtml(m.nick || '')}</span>
       <span class="text">${highlightNicks(renderText(m.text), state.channels.get(state.active)?.nicks)}</span>
     </span>`;
@@ -1202,11 +1208,16 @@ function showConnectError(msg) {
   connectError.classList.remove('hidden');
 }
 
-function nickColor(nick) {
-  if (!nick || nick === '--') return '';
+function nickHue(nick) {
+  if (!nick || nick === '--') return null;
   let h = 0;
   for (let i = 0; i < nick.length; i++) h = (Math.imul(31, h) + nick.charCodeAt(i)) | 0;
-  const hue = ((h >>> 0) % 360);
+  return (h >>> 0) % 360;
+}
+
+function nickColor(nick) {
+  const hue = nickHue(nick);
+  if (hue === null) return '';
   const light = window.matchMedia('(prefers-color-scheme: light)').matches ? '38%' : '68%';
   return `hsl(${hue},65%,${light})`;
 }
