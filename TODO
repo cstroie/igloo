@@ -1,7 +1,5 @@
 # TODO
 
-## Done
-
 - [x] Populate topic bar from IRC numerics 332/333
 - [x] Display MOTD in *server* tab
 - [x] Handle KICK, INVITE, MODE, QUIT, NICK
@@ -37,11 +35,8 @@
 - [x] CAP END / rate limiting / clean QUIT (play nice with IRCd)
 - [X] Browser notifications for mentions (Notification API)
 - [X] Mobile-responsive layout (sidebar collapses)
-
-## Planned
-
 - [x] Channel key support (/join #channel key)
 - [ ] Multiple server connections
-- [ ] away-notify CAP — live away status without polling WHOIS
+- [x] away-notify CAP — live away status without polling WHOIS
 - [ ] server-time CAP — use server timestamps instead of client clock
 - [ ] DM history stored per nick (currently only channel logs are persisted)

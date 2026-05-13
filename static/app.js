@@ -425,20 +425,19 @@ function handle(msg) {
     }
 
     case 'away': {
-      // mark nick as away in whois cache for all channels they're in
-      state.whoisCache.forEach((lines, nick) => {
-        if (nick === msg.nick) {
-          if (!lines.includes('away: ' + msg.text)) lines.push('away: ' + msg.text);
-        }
-      });
-      // seed cache entry if not present so renderUserlist can show the badge
-      if (!state.whoisCache.has(msg.nick)) state.whoisCache.set(msg.nick, ['away: ' + msg.text]);
-      else {
-        const lines = state.whoisCache.get(msg.nick);
-        if (!lines.some(l => l.startsWith('away:'))) lines.push('away: ' + msg.text);
+      const isBack = !msg.text;
+      // update whois cache: remove old away line, add new one if going away
+      const lines = state.whoisCache.get(msg.nick) || [];
+      const filtered = lines.filter(l => !l.startsWith('away:'));
+      if (isBack) {
+        if (lines.length) state.whoisCache.set(msg.nick, filtered);
+      } else {
+        filtered.push('away: ' + msg.text);
+        state.whoisCache.set(msg.nick, filtered);
+        // only show inline notice for 301 (when we messaged them); away-notify is silent
+        if (msg.source === '301')
+          appendMsg(state.active || '*server*', { type: 'system', nick: '--', text: `${msg.nick} is away: ${msg.text}` });
       }
-      // show inline in active channel if we just messaged them
-      appendMsg(state.active || '*server*', { type: 'system', nick: '--', text: `${msg.nick} is away: ${msg.text}` });
       renderUserlist();
       break;
     }

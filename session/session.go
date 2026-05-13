@@ -148,12 +148,12 @@ func (s *Session) Connect(server string, port int, nick, realname string, useTLS
 
 	serverPass := ""
 	// Always request multi-prefix; add sasl if that auth method is chosen.
-	capReq := "multi-prefix"
+	capReq := "multi-prefix away-notify"
 	switch authMethod {
 	case "server":
 		serverPass = pass
 	case "sasl":
-		capReq = "multi-prefix sasl"
+		capReq = "multi-prefix away-notify sasl"
 	}
 
 	if err := irc.Handshake(conn, nick, nick, realname, serverPass, capReq); err != nil {
@@ -356,9 +356,12 @@ func (s *Session) ircLoop(lines <-chan string) {
 			logger.L.Info("NICK", "session", s.ID, "old", msg.Nick, "new", newNick)
 			s.sendWS(map[string]any{"type": "nick", "old": msg.Nick, "new": newNick})
 
+		case "AWAY": // away-notify CAP: nick set or cleared away status
+			s.sendWS(map[string]any{"type": "away", "nick": msg.Nick, "text": msg.Trailing})
+
 		case "301": // RPL_AWAY — target is away (received during WHOIS or when messaging someone away)
 			if len(msg.Params) >= 2 {
-				s.sendWS(map[string]any{"type": "away", "nick": msg.Params[1], "text": msg.Trailing})
+				s.sendWS(map[string]any{"type": "away", "nick": msg.Params[1], "text": msg.Trailing, "source": "301"})
 			}
 
 		case "305": // RPL_UNAWAY
