@@ -28,7 +28,7 @@ import (
 	"wirgloo/logger"
 )
 
-const wsReconnectWindow = 60 * time.Second // idle WS window before the IRC connection is torn down
+const wsReconnectWindow = 30 * time.Minute // idle WS window before the IRC connection is torn down
 const bufferMax         = 500              // max IRC messages buffered while the WS is detached
 const pingInterval      = 90 * time.Second // how often to send a client-initiated PING to the server
 const pingTimeout       = 60 * time.Second // max time to wait for a PONG before declaring the link dead

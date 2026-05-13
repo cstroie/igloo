@@ -37,6 +37,20 @@ const topicText     = $('topic-text');
 const input         = $('input');
 const userlist      = $('userlist');
 
+// ── Session resume from URL ───────────────────────────────────────────────────
+{
+  const urlSession = new URLSearchParams(location.search).get('s');
+  if (urlSession) {
+    state.sessionId = urlSession;
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    const ws = new WebSocket(`${proto}://${location.host}/ws?session=${urlSession}`);
+    state.ws = ws;
+    ws.onmessage = e => { try { handle(JSON.parse(e.data)); } catch {} };
+    ws.onerror = () => {};
+    ws.onclose = () => { if (state.sessionId || state.connectParams) scheduleReconnect(); };
+  }
+}
+
 // ── Network presets ───────────────────────────────────────────────────────────
 const NETWORKS = {
   libera:   { server: 'irc.libera.chat',    port: 6697, tls: true  },
@@ -271,6 +285,7 @@ function handle(msg) {
       state.connected = true;
       state.sessionId = msg.session;
       state.nick = msg.nick;
+      history.replaceState(null, '', '?s=' + msg.session);
       reconnectDelay = 1000;
       myNick.textContent = msg.nick;
       appendMsg('*server*', { type: 'system', nick: '--', text: `Connected as ${msg.nick}` });
@@ -309,6 +324,7 @@ function handle(msg) {
     case 'session_expired':
       state.sessionId = null;
       state.connected = false;
+      history.replaceState(null, '', location.pathname);
       if (state.connectParams) {
         // server was restarted — reconnect transparently using saved params
         const p = state.connectParams;
@@ -1252,6 +1268,7 @@ $('nick-btn').addEventListener('click', () => {
 
 $('disconnect-btn').addEventListener('click', () => {
   state.sessionId = null;
+  history.replaceState(null, '', location.pathname);
   send({ type: 'disconnect', text: 'Leaving' });
   setTimeout(() => { state.ws?.close(); onDisconnect('Disconnected'); }, 300);
 });
@@ -1296,6 +1313,7 @@ function onConnectFailed(reason) {
 function onDisconnect(reason) {
   state.connected = false;
   state.sessionId = null;
+  history.replaceState(null, '', location.pathname);
   state.channels.clear();
   state.active = null;
   document.title = 'wirgloo';
