@@ -1,5 +1,7 @@
 # TODO
 
+## Done
+
 - [x] Populate topic bar from IRC numerics 332/333
 - [x] Display MOTD in *server* tab
 - [x] Handle KICK, INVITE, MODE, QUIT, NICK
@@ -33,9 +35,35 @@
 - [x] Emoji icons per sidebar entry type (server, channel, DM, list)
 - [x] Real Name field on connect form
 - [x] CAP END / rate limiting / clean QUIT (play nice with IRCd)
-- [X] Browser notifications for mentions (Notification API)
-- [X] Mobile-responsive layout (sidebar collapses)
+- [x] Browser notifications for mentions (Notification API)
+- [x] Mobile-responsive layout (sidebar collapses)
 - [x] Channel key support (/join #channel key)
 - [x] away-notify CAP — live away status without polling WHOIS
 - [x] server-time CAP — use server timestamps instead of client clock
 - [x] DM history stored per nick (currently only channel logs are persisted)
+
+## Planned
+
+- [ ] Multiple server connections
+
+### Polish / correctness
+- [ ] userhost-in-names CAP — get nick!user@host from NAMES without WHOIS
+- [ ] Configurable highlight words beyond own nick
+- [ ] Reconnect indicator — show how long disconnected so you know missed history gap
+- [ ] Confirm /ignore is persisted across sessions
+
+### UX
+- [ ] Unread scroll marker — visual line dividing seen vs new messages
+- [ ] Image/URL inline preview (opt-in)
+- [ ] /rejoin shortcut (part + join, useful after kicks or netsplits)
+- [ ] Clickable nicks in chat — open DM or show mini-profile
+
+### IRC features
+- [ ] CTCP VERSION reply
+- [ ] +R/+m mode awareness — warn or dim input when you can't speak
+- [ ] Channel key memory — remember +k key for auto-rejoin
+
+### Comfort
+- [ ] Message search within a channel (/search keyword)
+- [ ] Font size / compact mode toggle
+- [ ] Sound notification option alongside browser notifications
