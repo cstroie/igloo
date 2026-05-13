@@ -312,6 +312,13 @@ func (s *Session) ircLoop(lines <-chan string) {
 			target, text := msg.Params[0], msg.Params[1]
 			if strings.HasPrefix(text, "\x01ACTION ") && strings.HasSuffix(text, "\x01") {
 				text = "/me " + strings.TrimSuffix(strings.TrimPrefix(text, "\x01ACTION "), "\x01")
+			} else if strings.HasPrefix(text, "\x01PING") && strings.HasSuffix(text, "\x01") {
+				token := strings.TrimSuffix(strings.TrimPrefix(text, "\x01"), "\x01")
+				s.writeNow("NOTICE " + msg.Nick + " :\x01" + token + "\x01")
+				continue
+			} else if strings.HasPrefix(text, "\x01") && strings.HasSuffix(text, "\x01") {
+				// ignore other CTCP requests silently
+				continue
 			}
 			logger.L.Debug("PRIVMSG", "session", s.ID, "from", msg.Nick, "target", target)
 			s.sendWS(map[string]any{

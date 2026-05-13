@@ -661,6 +661,7 @@ function renderChannelList() {
         return;
       }
       if (ch.offline) {
+        openPanel(null);
         send({ type: 'join', channel: target });
       } else {
         setActive(target);
@@ -889,6 +890,7 @@ function openPanel(panel) {
   backdrop.classList.toggle('visible', !!panel);
 }
 $('panel-backdrop').addEventListener('click', () => openPanel(null));
+messages.addEventListener('click', () => openPanel(null));
 $('sidebar-toggle').addEventListener('click', () => {
   const isOpen = document.getElementById('sidebar').classList.contains('open');
   openPanel(isOpen ? null : 'sidebar');
@@ -1105,15 +1107,18 @@ $('list-sort-bar').addEventListener('click', e => {
 
 // ── Sidebar buttons ───────────────────────────────────────────────────────────
 $('list-btn').addEventListener('click', () => {
+  openPanel(null);
   send({ type: 'raw', line: 'LIST' });
 });
 
 $('join-btn').addEventListener('click', () => {
+  openPanel(null);
   const ch = prompt('Channel to join:');
   if (ch) send({ type: 'join', channel: ch.startsWith('#') ? ch : '#' + ch });
 });
 
 $('nick-btn').addEventListener('click', () => {
+  openPanel(null);
   const n = prompt('New nickname:', state.nick);
   if (n && n !== state.nick) send({ type: 'nick', nick: n });
 });
