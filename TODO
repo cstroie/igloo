@@ -42,15 +42,11 @@
 - [x] server-time CAP — use server timestamps instead of client clock
 - [x] DM history stored per nick (currently only channel logs are persisted)
 
-## Planned
-
-- [ ] Multiple server connections
-
 ### Polish / correctness
 - [x] userhost-in-names CAP — get nick!user@host from NAMES without WHOIS
 - [ ] Configurable highlight words beyond own nick
 - [ ] Reconnect indicator — show how long disconnected so you know missed history gap
-- [ ] Confirm /ignore is persisted across sessions
+- [x] /ignore persisted across sessions (wirgloo_ignored in localStorage)
 
 ### UX
 - [ ] Unread scroll marker — visual line dividing seen vs new messages
