@@ -9,7 +9,7 @@
   --text:      #dde1f0;
   --text-dim:  #6b7280;
   --text-head: #9ca3af;
-  --mention:   #f59e0b;
+  --mention:   #a78bfa;
   --error:     #f87171;
   --join:      #34d399;
   --part:      #f87171;
@@ -36,7 +36,7 @@
     --text:      #1a1b2e;
     --text-dim:  #6b7280;
     --text-head: #4b5563;
-    --mention:   #b45309;
+    --mention:   #6d28d9;
     --error:     #dc2626;
     --join:      #059669;
     --part:      #dc2626;
@@ -251,7 +251,7 @@ html, body { height: 100%; font-family: var(--font-mono); background: var(--bg);
 .msg-header { display: none; }
 .nick-mention { font-weight: bold; }
 
-.msg.mention { background: rgba(245,158,11,0.07); border-radius: 6px; }
+.msg.mention { background: var(--accent-bg); border-radius: 6px; }
 .msg.action .action-star { text-align: right; }
 .msg.action .action-text { flex: 1; min-width: 0; font-style: italic; white-space: pre-wrap; }
 .msg.mention .text { color: var(--mention); }
@@ -367,7 +367,7 @@ html, body { height: 100%; font-family: var(--font-mono); background: var(--bg);
 .badge-away       { color: var(--text-dim); border-color: var(--text-dim); background: rgba(107,114,128,0.15); }
 .badge-secure     { color: var(--join);    border-color: var(--join);    background: rgba(52,211,153,0.1); }
 .badge-identified { color: var(--notice);  border-color: var(--notice);  background: rgba(96,165,250,0.1); }
-.badge-ircop      { color: var(--mention); border-color: var(--mention); background: rgba(245,158,11,0.1); }
+.badge-ircop      { color: var(--mention); border-color: var(--mention); background: var(--accent-bg); }
 .badge-bot        { color: var(--me);      border-color: var(--me);      background: rgba(192,132,252,0.1); }
 
 .dm-whois {
