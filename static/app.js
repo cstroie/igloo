@@ -494,8 +494,17 @@ function handle(msg) {
         const allPrefixSyms = new RegExp(`^[${Object.keys(state.prefixRank).map(s => s.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')).join('')}]+`);
         msg.nicks.forEach(n => {
           const pm = n.match(allPrefixSyms);
-          const prefix = pm ? pm[0] : ''; // keep all prefix chars (multi-prefix)
-          ch._namesAccum.set(n.slice(prefix.length), prefix);
+          const prefix = pm ? pm[0] : '';
+          const full = n.slice(prefix.length); // nick or nick!user@host
+          const bangIdx = full.indexOf('!');
+          const nick = bangIdx !== -1 ? full.slice(0, bangIdx) : full;
+          ch._namesAccum.set(nick, prefix);
+          if (bangIdx !== -1) {
+            const host = full.slice(bangIdx + 1); // user@host
+            if (!state.whoisCache.has(nick)) state.whoisCache.set(nick, []);
+            const lines = state.whoisCache.get(nick);
+            if (!lines.some(l => l.startsWith('host:'))) lines.push('host: ' + host);
+          }
         });
       }
       break;
@@ -829,6 +838,8 @@ function parseWhois(lines) {
       w.idle = m[1];
     else if ((m = l.match(/logged in as (\S+)/)))
       w.account = m[1];
+    else if ((m = l.match(/^host: (.+?)@(.+)/)))
+      { w.ident = m[1]; w.host = m[2]; }
     else if ((m = l.match(/^away: (.+)/)))
       { w.away = true; w.awayMsg = m[1]; }
     else if (l.includes('secure connection'))  w.secure = true;

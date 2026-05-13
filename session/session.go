@@ -148,12 +148,12 @@ func (s *Session) Connect(server string, port int, nick, realname string, useTLS
 
 	serverPass := ""
 	// Always request multi-prefix; add sasl if that auth method is chosen.
-	capReq := "multi-prefix away-notify server-time"
+	capReq := "multi-prefix away-notify server-time userhost-in-names"
 	switch authMethod {
 	case "server":
 		serverPass = pass
 	case "sasl":
-		capReq = "multi-prefix away-notify server-time sasl"
+		capReq = "multi-prefix away-notify server-time userhost-in-names sasl"
 	}
 
 	if err := irc.Handshake(conn, nick, nick, realname, serverPass, capReq); err != nil {
