@@ -116,7 +116,11 @@ function applyNetworkSelection(value) {
     $('port').value   = net.port;
     $('tls').checked  = net.tls;
     $('tls').dispatchEvent(new Event('change'));
-    if (net.nick) $('nick').value = net.nick;
+    const srv = loadSrv(net.server);
+    if (srv.nick)       $('nick').value = srv.nick;
+    else if (net.nick)  $('nick').value = net.nick;
+    if (srv.realname)   $('realname').value = srv.realname;
+    if (srv.authMethod) { $('auth-method').value = srv.authMethod; $('pass-field').classList.toggle('hidden', srv.authMethod === 'none'); }
   }
 }
 
