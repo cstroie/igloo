@@ -17,7 +17,7 @@
   --me:        #c084fc;
   --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
   --radius:    8px;
-  --sidebar-w: 210px;
+  --sidebar-w: 170px;
   --users-w:   170px;
   --header-h:  48px;
   --panel-shadow:       2px 0 16px rgba(0,0,0,0.35);
@@ -267,9 +267,11 @@ html, body { height: 100%; font-family: var(--font-mono); background: var(--bg);
 .msg.motd .text { color: var(--text-dim); font-size: 0.85rem; }
 .msg.whois .nick-col { color: var(--text-dim); }
 .msg.whois .text { color: var(--notice); font-size: 0.85rem; }
-.msg.list .nick-col { color: var(--text-dim); font-size: 0.8rem; }
-.msg.list .chan { color: var(--accent); margin-right: 8px; }
-.msg.list .ltopic { color: var(--text-dim); font-size: 0.85rem; }
+.msg.list .ts        { width: 25px; min-width: 25px; }
+.msg.list .nick-col  { min-width: 100px; max-width: 100px; text-align: left; color: var(--accent); }
+.msg.list .text      { flex: 1; }
+.msg.list .list-count { color: var(--text-dim); font-size: 0.8rem; }
+.msg.list .ltopic    { color: var(--text-dim); font-size: 0.85rem; }
 
 #input-bar {
   display: flex; gap: 8px; padding: 12px 16px;
@@ -418,8 +420,7 @@ html, body { height: 100%; font-family: var(--font-mono); background: var(--bg);
 .sort-btn:hover { color: var(--text); border-color: var(--border); }
 .sort-btn.active { color: var(--accent); border-color: var(--accent); background: var(--accent-bg); }
 
-.msg.list .list-count { color: var(--text-dim); font-size: 0.8rem; }
-.msg.list .list-join { color: var(--accent); cursor: pointer; margin-right: 10px; }
+.msg.list .list-join { cursor: pointer; }
 .msg.list .list-join:hover { text-decoration: underline; }
 
 .session-break {
@@ -501,7 +502,7 @@ html, body { height: 100%; font-family: var(--font-mono); background: var(--bg);
   /* server / status — no bubble, centred */
   .msg.system .body, .msg.join .body, .msg.part .body,
   .msg.quit   .body, .msg.error .body, .msg.connecting .body,
-  .msg.motd   .body, .msg.notice .body, .msg.whois .body { align-items: center; }
+  .msg.notice .body, .msg.whois .body { align-items: center; }
 
   .msg.system .msg-header, .msg.join .msg-header, .msg.part .msg-header,
   .msg.quit   .msg-header, .msg.error .msg-header, .msg.connecting .msg-header,
@@ -513,13 +514,16 @@ html, body { height: 100%; font-family: var(--font-mono); background: var(--bg);
     background: none; border-radius: 0; padding: 2px 4px; max-width: 100%;
   }
 
-  .msg.action .body { flex-direction: row; align-items: baseline; }
+  .msg.motd .body { align-items: flex-start; }
+
   .msg.action .action-star { display: none; }
   .msg.action .action-text { background: none; padding: 2px 4px; }
 
+  .msg.list          { display: flex; flex-direction: row; align-items: baseline; gap: 8px; padding: 1px 4px; }
+  .msg.list .ts      { display: block; width: 25px; min-width: 25px; flex-shrink: 0; }
   .msg.list .nick-col { display: block; }
-  .msg.list .body { flex-direction: row; align-items: baseline; gap: 8px; }
-  .msg.list .text { background: none; border-radius: 0; padding: 0; max-width: 100%; }
+  .msg.list .body    { flex: 1; flex-direction: row; align-items: baseline; gap: 8px; flex-wrap: nowrap; min-width: 0; }
+  .msg.list .text    { background: none; border-radius: 0; padding: 0; max-width: 100%; }
 }
 
 /* ── Narrow mobile only (≤ 640px): slide-in panels ─── */

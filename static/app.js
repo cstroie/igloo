@@ -572,13 +572,10 @@ function renderListMessages() {
     const el = document.createElement('div');
     el.className = 'msg list';
     el.innerHTML = `
-      <span class="ts"></span>
+      <span class="ts list-count">${item.count}</span>
       <span class="body">
-        <span class="nick-col list-count">${item.count}</span>
-        <span class="text">
-          <span class="chan list-join" data-channel="${escHtml(item.channel)}">${escHtml(item.channel)}</span>
-          <span class="ltopic">${linkify(escHtml(item.topic))}</span>
-        </span>
+        <span class="nick-col chan list-join" data-channel="${escHtml(item.channel)}">${escHtml(item.channel)}</span>
+        <span class="text ltopic">${linkify(escHtml(item.topic))}</span>
       </span>`;
     el.querySelector('.list-join').addEventListener('click', () => {
       send({ type: 'join', channel: item.channel });
@@ -744,7 +741,7 @@ function buildMsgEl(m, target, grouped = false) {
 
   if (m.text && m.text.startsWith('/me ')) {
     const action = m.text.slice(4);
-    el.className += ' action';
+    el.className += ' action' + (self ? ' self' : '');
     el.innerHTML = `
       <span class="ts">${ts}</span>
       <span class="body">
