@@ -328,7 +328,7 @@ html, body { height: 100%; font-family: var(--font-mono); background: var(--bg);
   z-index: 1;
 }
 #userlist-header {
-  display: flex; align-items: center;
+  display: flex; align-items: center; justify-content: flex-end;
   height: var(--header-h); padding: 0 14px;
   border-bottom: 1px solid var(--border);
   color: var(--text-head); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;
