@@ -645,7 +645,7 @@ function removeChannel(target) {
 
 function setActive(target) {
   if (!target || !state.channels.has(target)) return;
-  openPanel(null); // close any open mobile panel
+  openPanel(isDM(target) ? 'userlist' : null);
   state.active = target;
   state.dmOriginChannel = null;
   const ch = state.channels.get(target);
@@ -1000,13 +1000,17 @@ function renderUserlist() {
 
     const chan = state.dmOriginChannel;
     footer.innerHTML =
-      `<button id="whois-btn">⊕ Info</button>` +
-      `<button id="close-dm-btn" class="danger">✕ Close</button>` +
-      (chan ? `<div class="userlist-footer-sep"></div>` +
-              `<button id="uf-op">● Op</button>` +
+      (chan ? `<button id="uf-op">● Op</button>` +
               `<button id="uf-deop">○ DeOp</button>` +
+              `<button id="uf-voice">+ Voice</button>` +
+              `<button id="uf-devoice">− DeVoice</button>` +
               `<button id="uf-ban" class="danger">⊘ Ban</button>` +
-              `<button id="uf-kick" class="danger">✕ Kick</button>` : '');
+              `<button id="uf-kick" class="danger">✕ Kick</button>` +
+              `<div class="userlist-footer-sep"></div>` : '') +
+      `<button id="uf-ignore">⊖ Ignore</button>` +
+      `<div class="userlist-footer-sep"></div>` +
+      `<button id="whois-btn">⊕ Info</button>` +
+      `<button id="close-dm-btn" class="danger">✕ Close</button>`;
     footer.classList.remove('hidden');
     footer.querySelector('#whois-btn').addEventListener('click', () => {
       state.whoisCache.delete(nick);
@@ -1014,11 +1018,18 @@ function renderUserlist() {
       send({ type: 'raw', line: `WHOIS ${nick}` });
     });
     footer.querySelector('#close-dm-btn').addEventListener('click', () => removeChannel(nick));
+    footer.querySelector('#uf-ignore').addEventListener('click', () => {
+      state.ignored.add(nick.toLowerCase());
+      saveIgnored();
+      renderUserlist();
+    });
     if (chan) {
-      footer.querySelector('#uf-op').addEventListener('click',   () => send({ type: 'raw', line: `MODE ${chan} +o ${nick}` }));
-      footer.querySelector('#uf-deop').addEventListener('click', () => send({ type: 'raw', line: `MODE ${chan} -o ${nick}` }));
-      footer.querySelector('#uf-ban').addEventListener('click',  () => send({ type: 'raw', line: `MODE ${chan} +b ${nick}!*@*` }));
-      footer.querySelector('#uf-kick').addEventListener('click', () => send({ type: 'raw', line: `KICK ${chan} ${nick} :Kicked` }));
+      footer.querySelector('#uf-op').addEventListener('click',      () => send({ type: 'raw', line: `MODE ${chan} +o ${nick}` }));
+      footer.querySelector('#uf-deop').addEventListener('click',    () => send({ type: 'raw', line: `MODE ${chan} -o ${nick}` }));
+      footer.querySelector('#uf-voice').addEventListener('click',   () => send({ type: 'raw', line: `MODE ${chan} +v ${nick}` }));
+      footer.querySelector('#uf-devoice').addEventListener('click', () => send({ type: 'raw', line: `MODE ${chan} -v ${nick}` }));
+      footer.querySelector('#uf-ban').addEventListener('click',     () => send({ type: 'raw', line: `MODE ${chan} +b ${nick}!*@*` }));
+      footer.querySelector('#uf-kick').addEventListener('click',    () => send({ type: 'raw', line: `KICK ${chan} ${nick} :Kicked` }));
     }
 
     userlist.appendChild(card);
