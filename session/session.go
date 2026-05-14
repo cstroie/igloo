@@ -152,12 +152,12 @@ func (r *Registry) Remove(id string) {
 // "nickserv_cmd" → NICKSERV IDENTIFY; "server" → PASS command in handshake;
 // "none" or empty → no authentication. Connect returns once the TCP connection
 // and handshake succeed; the 001 numeric arrives asynchronously via ircLoop.
-func (s *Session) Connect(server string, port int, nick, realname string, useTLS, selfSigned bool, pass, authMethod string) error {
+func (s *Session) Connect(server string, port int, nick, realname string, useTLS, noVerify bool, pass, authMethod string) error {
 	if realname == "" {
 		realname = nick
 	}
-	logger.L.Info("connecting to IRC", "session", s.ID, "server", server, "port", port, "nick", nick, "tls", useTLS, "selfsigned", selfSigned)
-	conn, err := irc.Dial(server, port, useTLS, selfSigned)
+	logger.L.Info("connecting to IRC", "session", s.ID, "server", server, "port", port, "nick", nick, "tls", useTLS, "noverify", noVerify)
+	conn, err := irc.Dial(server, port, useTLS, noVerify)
 	if err != nil {
 		logger.L.Error("IRC dial failed", "session", s.ID, "server", server, "err", err)
 		s.sendWS(map[string]any{"type": "connect_error", "text": err.Error()})

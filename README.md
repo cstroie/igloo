@@ -7,7 +7,7 @@ The server proxies IRC over a WebSocket so you can connect from any browser. A s
 ## Features
 
 **Connectivity**
-- TLS and plain IRC connections, self-signed certificate support
+- TLS and plain IRC connections, optional TLS verification bypass (self-signed certs, hostname mismatches)
 - Predefined network presets (Libera.Chat, OFTC, Rizon, EFnet, QuakeNet, DALnet, Undernet, IRCnet, GeekShed, RadioChat, SDF)
 - Custom server profiles saved to browser localStorage
 - WebSocket reconnection with exponential backoff — IRC session survives brief network drops

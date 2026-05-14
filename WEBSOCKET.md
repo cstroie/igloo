@@ -49,7 +49,7 @@ Initiate an IRC connection.
 | `nick` | string | yes | — | Desired IRC nickname |
 | `realname` | string | no | same as `nick` | IRC real name |
 | `tls` | bool | no | `false` | Use TLS |
-| `selfsigned` | bool | no | `false` | Accept self-signed TLS certificates |
+| `noverify` | bool | no | `false` | Skip TLS certificate verification (self-signed certs, hostname mismatches, etc.) |
 | `pass` | string | no | `""` | Password for the chosen auth method |
 | `authmethod` | string | no | `"none"` | `"none"` \| `"sasl"` \| `"nickserv"` \| `"nickserv_cmd"` \| `"server"` |
 

@@ -250,7 +250,7 @@ connectForm.addEventListener('submit', e => {
   const port       = parseInt($('port').value);
   const nick       = $('nick').value.trim();
   const tls        = $('tls').checked;
-  const selfsigned = $('selfsigned').checked;
+  const noverify = $('noverify').checked;
   const authMethod = $('auth-method').value;
   const pass       = $('pass').value;
   const realname   = $('realname').value.trim() || nick;
@@ -263,7 +263,7 @@ connectForm.addEventListener('submit', e => {
   }
   state.server = server;
   localStorage.setItem('wirgloo_session_server', server);
-  state.connectParams = { server, port, nick, realname, tls, selfsigned, authMethod, pass };
+  state.connectParams = { server, port, nick, realname, tls, noverify, authMethod, pass };
   connectError.classList.add('hidden');
   connectScreen.classList.add('hidden');
   chatScreen.classList.remove('hidden');
@@ -271,20 +271,20 @@ connectForm.addEventListener('submit', e => {
   setActive('*server*');
   myNick.textContent = nick;
   appendMsg('*server*', { type: 'connecting', nick: '--', text: `Connecting to ${server}:${port}…` });
-  openWS(server, port, nick, realname, tls, selfsigned, authMethod, pass);
+  openWS(server, port, nick, realname, tls, noverify, authMethod, pass);
 });
 
 $('tls').addEventListener('change', function() {
   $('port').value = this.checked ? 6697 : 6667;
-  $('selfsigned-field').classList.toggle('hidden', !this.checked);
-  if (!this.checked) $('selfsigned').checked = false;
+  $('noverify-field').classList.toggle('hidden', !this.checked);
+  if (!this.checked) $('noverify').checked = false;
 });
 
 $('auth-method').addEventListener('change', function() {
   $('pass-field').classList.toggle('hidden', this.value === 'none');
 });
 
-function openWS(server, port, nick, realname, tls, selfsigned, authMethod, pass) {
+function openWS(server, port, nick, realname, tls, noverify, authMethod, pass) {
   // close any existing socket before opening a new one
   if (state.ws) {
     state.ws.onclose = null; // prevent the close handler from firing
@@ -296,7 +296,7 @@ function openWS(server, port, nick, realname, tls, selfsigned, authMethod, pass)
   state.ws = ws;
 
   ws.onopen = () => {
-    send({ type: 'connect', server, port, nick, realname, tls, selfsigned, pass, authmethod: authMethod });
+    send({ type: 'connect', server, port, nick, realname, tls, noverify, pass, authmethod: authMethod });
   };
 
   ws.onmessage = e => {
@@ -442,7 +442,7 @@ function handle(msg) {
         const p = state.connectParams;
         appendMsg('*server*', { type: 'connecting', nick: '--', text: 'Session expired — reconnecting…' });
         reconnectDelay = 1000;
-        openWS(p.server, p.port, p.nick, p.realname, p.tls, p.selfsigned, p.authMethod, p.pass);
+        openWS(p.server, p.port, p.nick, p.realname, p.tls, p.noverify, p.authMethod, p.pass);
       } else {
         state.ws?.close();
         state.channels.clear();
@@ -1564,7 +1564,7 @@ function scheduleReconnect() {
     } else if (state.connectParams) {
       // session was lost (server restart during reconnect window) — do a full reconnect
       const p = state.connectParams;
-      openWS(p.server, p.port, p.nick, p.realname, p.tls, p.selfsigned, p.authMethod, p.pass);
+      openWS(p.server, p.port, p.nick, p.realname, p.tls, p.noverify, p.authMethod, p.pass);
     }
   }, reconnectDelay);
   reconnectDelay = Math.min(reconnectDelay * 2, 30000);

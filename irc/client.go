@@ -30,10 +30,11 @@ type Message struct {
 }
 
 // Dial opens a TCP connection to server:port. When useTLS is true the
-// connection is wrapped in TLS; selfSigned disables certificate verification
-// for servers with self-signed certificates. TCP keepalives are enabled on
-// the underlying socket so silent connection drops are detected promptly.
-func Dial(server string, port int, useTLS, selfSigned bool) (net.Conn, error) {
+// connection is wrapped in TLS; noVerify disables certificate verification
+// (covers self-signed certs, hostname mismatches, expired certs, etc.).
+// TCP keepalives are enabled on the underlying socket so silent connection
+// drops are detected promptly.
+func Dial(server string, port int, useTLS, noVerify bool) (net.Conn, error) {
 	addr := fmt.Sprintf("[%s]:%d", server, port)
 	if server[0] != '[' && !containsColon(server) {
 		addr = fmt.Sprintf("%s:%d", server, port)
@@ -41,7 +42,7 @@ func Dial(server string, port int, useTLS, selfSigned bool) (net.Conn, error) {
 	if useTLS {
 		conn, err := tls.Dial("tcp", addr, &tls.Config{
 			ServerName:         server,
-			InsecureSkipVerify: selfSigned,
+			InsecureSkipVerify: noVerify,
 		})
 		if err != nil {
 			return nil, err
