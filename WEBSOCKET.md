@@ -510,7 +510,7 @@ Generic IRC error forwarded to the browser. Sources: `ERR_NICKNAMEINUSE` (433), 
 | `nick` | string | IRC nickname |
 | `channel` | string | `#channel` |
 | `text` | string | Human-readable text or message body |
-| `ts` | number | Unix timestamp in seconds |
+| `ts` | number | Unix timestamp in seconds; present on all chat and channel events |
 | `ms` | number | Round-trip time in milliseconds |
 | `away` | boolean | Only in `away_status` |
 | `nicks` | array of strings | Only in `names_chunk` |

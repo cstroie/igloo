@@ -457,7 +457,7 @@ func (s *Session) ircLoop(lines <-chan string) {
 				s.channels[channel] = true
 				s.mu.Unlock()
 			}
-			s.sendWS(map[string]any{"type": "join", "nick": msg.Nick, "channel": channel})
+			s.sendWS(map[string]any{"type": "join", "nick": msg.Nick, "channel": channel, "ts": msgTime(msg)})
 
 		case "PART":
 			channel := ""
@@ -470,12 +470,12 @@ func (s *Session) ircLoop(lines <-chan string) {
 				delete(s.channels, channel)
 				s.mu.Unlock()
 			}
-			s.sendWS(map[string]any{"type": "part", "nick": msg.Nick, "channel": channel, "text": msg.Trailing})
+			s.sendWS(map[string]any{"type": "part", "nick": msg.Nick, "channel": channel, "text": msg.Trailing, "ts": msgTime(msg)})
 
 		case "TOPIC":
 			if len(msg.Params) > 0 {
 				channel := msg.Params[0]
-				s.sendWS(map[string]any{"type": "topic", "channel": channel, "text": msg.Trailing, "nick": msg.Nick})
+				s.sendWS(map[string]any{"type": "topic", "channel": channel, "text": msg.Trailing, "nick": msg.Nick, "ts": msgTime(msg)})
 			}
 
 		case "NICK":
@@ -489,7 +489,7 @@ func (s *Session) ircLoop(lines <-chan string) {
 				s.mu.Unlock()
 			}
 			logger.L.Info("NICK", "session", s.ID, "old", msg.Nick, "new", newNick)
-			s.sendWS(map[string]any{"type": "nick", "old": msg.Nick, "new": newNick})
+			s.sendWS(map[string]any{"type": "nick", "old": msg.Nick, "new": newNick, "ts": msgTime(msg)})
 
 		case "AWAY": // away-notify CAP: nick set or cleared away status
 			s.sendWS(map[string]any{"type": "away", "nick": msg.Nick, "away": msg.Trailing != "", "text": msg.Trailing})
@@ -629,14 +629,14 @@ func (s *Session) ircLoop(lines <-chan string) {
 			target := msg.Params[0]
 			modeStr := strings.Join(msg.Params[1:], " ")
 			logger.L.Debug("MODE", "session", s.ID, "target", target, "mode", modeStr)
-			s.sendWS(map[string]any{"type": "mode", "target": target, "mode": modeStr, "nick": msg.Nick})
+			s.sendWS(map[string]any{"type": "mode", "target": target, "mode": modeStr, "nick": msg.Nick, "ts": msgTime(msg)})
 
 		case "INVITE":
 			if len(msg.Params) < 2 {
 				continue
 			}
 			logger.L.Info("INVITE", "session", s.ID, "nick", msg.Nick, "channel", msg.Params[1])
-			s.sendWS(map[string]any{"type": "invite", "nick": msg.Nick, "channel": msg.Params[1]})
+			s.sendWS(map[string]any{"type": "invite", "nick": msg.Nick, "channel": msg.Params[1], "ts": msgTime(msg)})
 
 		case "KICK":
 			if len(msg.Params) < 2 {
@@ -651,11 +651,12 @@ func (s *Session) ircLoop(lines <-chan string) {
 			s.sendWS(map[string]any{
 				"type": "kick", "channel": msg.Params[0],
 				"nick": msg.Params[1], "by": msg.Nick, "text": msg.Trailing,
+				"ts": msgTime(msg),
 			})
 
 		case "QUIT":
 			logger.L.Debug("QUIT", "session", s.ID, "nick", msg.Nick)
-			s.sendWS(map[string]any{"type": "quit", "nick": msg.Nick, "text": msg.Trailing})
+			s.sendWS(map[string]any{"type": "quit", "nick": msg.Nick, "text": msg.Trailing, "ts": msgTime(msg)})
 
 		case "NOTICE":
 			if len(msg.Params) < 2 {

@@ -495,7 +495,7 @@ function handle(msg) {
         ensureChannel(msg.channel);
         state.channels.get(msg.channel)?.nicks.set(msg.nick, '');
         renderUserlist();
-        appendMsg(msg.channel, { type: 'join', nick: '', text: `→ ${msg.nick} joined ${msg.channel}` });
+        appendMsg(msg.channel, { type: 'join', nick: '', text: `→ ${msg.nick} joined ${msg.channel}`, ts: msg.ts });
       }
       break;
 
@@ -505,14 +505,14 @@ function handle(msg) {
         saveChannels(state.server); saveDMs(state.server);
       } else {
         state.channels.get(msg.channel)?.nicks.delete(msg.nick);        renderUserlist();
-        appendMsg(msg.channel, { type: 'part', nick: '', text: `← ${msg.nick} left ${msg.channel}${msg.text ? ' (' + msg.text + ')' : ''}` });
+        appendMsg(msg.channel, { type: 'part', nick: '', text: `← ${msg.nick} left ${msg.channel}${msg.text ? ' (' + msg.text + ')' : ''}`, ts: msg.ts });
       }
       break;
 
     case 'mode': {
       const dest = msg.target.startsWith('#') ? msg.target : '*server*';
       const setter = msg.nick || msg.target;
-      appendMsg(dest, { type: 'system', nick: '*', text: `${setter} sets mode ${msg.mode}` });
+      appendMsg(dest, { type: 'system', nick: '*', text: `${setter} sets mode ${msg.mode}`, ts: msg.ts });
       // track channel modes for +m/+R awareness and +k key memory
       const ch = state.channels.get(msg.target);
       if (ch) {
@@ -532,7 +532,7 @@ function handle(msg) {
     }
 
     case 'invite':
-      appendMsg('*server*', { type: 'notice', nick: msg.nick, text: `invites you to join ${msg.channel} — type /join ${msg.channel} to accept` });
+      appendMsg('*server*', { type: 'notice', nick: msg.nick, text: `invites you to join ${msg.channel} — type /join ${msg.channel} to accept`, ts: msg.ts });
       if (state.active !== '*server*') bumpUnread('*server*', false);
       break;
 
@@ -542,7 +542,7 @@ function handle(msg) {
         ch.nicks.delete(msg.nick);
         renderUserlist();
         const reason = msg.text ? ` (${msg.text})` : '';
-        appendMsg(msg.channel, { type: 'part', nick: '', text: `← ${msg.nick} was kicked by ${msg.by}${reason}` });
+        appendMsg(msg.channel, { type: 'part', nick: '', text: `← ${msg.nick} was kicked by ${msg.by}${reason}`, ts: msg.ts });
       }
       if (msg.nick === state.nick) removeChannel(msg.channel);
       break;
@@ -552,7 +552,7 @@ function handle(msg) {
       state.channels.forEach((ch, target) => {
         if (ch.nicks.has(msg.nick)) {
           ch.nicks.delete(msg.nick);
-          appendMsg(target, { type: 'quit', nick: '', text: `← ${msg.nick} quit (${msg.text})` });
+          appendMsg(target, { type: 'quit', nick: '', text: `← ${msg.nick} quit (${msg.text})`, ts: msg.ts });
         }
       });
       renderUserlist();
@@ -568,7 +568,7 @@ function handle(msg) {
           const prefix = ch.nicks.get(msg.old);
           ch.nicks.delete(msg.old);
           ch.nicks.set(msg.new, prefix);
-          appendMsg(target, { type: 'system', nick: '*', text: `${msg.old} is now known as ${msg.new}` });
+          appendMsg(target, { type: 'system', nick: '*', text: `${msg.old} is now known as ${msg.new}`, ts: msg.ts });
         }
       });
       renderUserlist();
@@ -649,9 +649,9 @@ function handle(msg) {
         ch.topic = msg.text;
         if (msg.channel === state.active) topicText.textContent = msg.text;
         if (state.joiningChannels?.has(msg.channel) && msg.text) {
-          appendMsg(msg.channel, { type: 'system', nick: '*', text: `Topic for ${msg.channel} is: ${msg.text}` });
+          appendMsg(msg.channel, { type: 'system', nick: '*', text: `Topic for ${msg.channel} is: ${msg.text}`, ts: msg.ts });
         } else if (msg.nick) {
-          appendMsg(msg.channel, { type: 'system', nick: '*', text: `${msg.nick} changed the topic to: ${msg.text}` });
+          appendMsg(msg.channel, { type: 'system', nick: '*', text: `${msg.nick} changed the topic to: ${msg.text}`, ts: msg.ts });
         }
       }
       break;
