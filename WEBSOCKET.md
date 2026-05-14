@@ -226,7 +226,7 @@ Incremental server metadata updates. The `key` and `value` types vary:
 |---|---|---|
 | `"software"` | string | 002 |
 | `"created"` | string | 003 |
-| `"channels"` | string | 254 |
+| `"channels"` | number | 254 |
 | `"local_users"` | string | 265 |
 | `"global_users"` | string | 266 |
 | `"admin"` | `[]string` (appended) | 257, 258, 259 |

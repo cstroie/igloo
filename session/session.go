@@ -375,7 +375,8 @@ func (s *Session) ircLoop(lines <-chan string) {
 
 		case "254": // RPL_LUSERCHANNELS
 			if len(msg.Params) >= 2 {
-				s.setMeta("channels", msg.Params[1]+" channels formed")
+				n, _ := strconv.Atoi(msg.Params[1])
+				s.setMeta("channels", n)
 			}
 
 		case "265": // RPL_LOCALUSERS
