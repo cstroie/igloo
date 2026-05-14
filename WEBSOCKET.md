@@ -41,17 +41,17 @@ Browser                                  Server
 
 Initiate an IRC connection.
 
-| Field | Type | Required | Default | Description |
-|---|---|---|---|---|
-| `type` | string | yes | — | `"connect"` |
-| `server` | string | yes | — | IRC server hostname |
-| `port` | int | no | 6667 / 6697 | Port; defaults applied server-side |
-| `nick` | string | yes | — | Desired IRC nickname |
-| `realname` | string | no | same as `nick` | IRC real name |
-| `tls` | bool | no | `false` | Use TLS |
-| `noverify` | bool | no | `false` | Skip TLS certificate verification (self-signed certs, hostname mismatches, etc.) |
-| `pass` | string | no | `""` | Password for the chosen auth method |
-| `authmethod` | string | no | `"none"` | `"none"` \| `"sasl"` \| `"nickserv"` \| `"nickserv_cmd"` \| `"server"` |
+| Field        | Type   | Required | Default        | Description                                                                       |
+|--------------|--------|----------|----------------|-----------------------------------------------------------------------------------|
+| `type`       | string | yes      | —              | `"connect"`                                                                       |
+| `server`     | string | yes      | —              | IRC server hostname                                                               |
+| `port`       | int    | no       | 6667 / 6697    | Port; defaults applied server-side                                                |
+| `nick`       | string | yes      | —              | Desired IRC nickname                                                              |
+| `realname`   | string | no       | same as `nick` | IRC real name                                                                     |
+| `tls`        | bool   | no       | `false`        | Use TLS                                                                           |
+| `noverify`   | bool   | no       | `false`        | Skip TLS certificate verification (self-signed certs, hostname mismatches, etc.) |
+| `pass`       | string | no       | `""`           | Password for the chosen auth method                                               |
+| `authmethod` | string | no       | `"none"`       | `"none"` \| `"sasl"` \| `"nickserv"` \| `"nickserv_cmd"` \| `"server"`          |
 
 Auth method semantics:
 - `"none"` — no authentication
@@ -64,58 +64,58 @@ Auth method semantics:
 
 Gracefully quit IRC.
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `type` | string | yes | `"disconnect"` |
-| `text` | string | no | Quit reason; defaults to `"Leaving"` |
+| Field  | Type   | Required | Description                          |
+|--------|--------|----------|--------------------------------------|
+| `type` | string | yes      | `"disconnect"`                       |
+| `text` | string | no       | Quit reason; defaults to `"Leaving"` |
 
 ### `join`
 
 Join a channel.
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `type` | string | yes | `"join"` |
-| `channel` | string | yes | Channel name (e.g. `"#example"`) |
-| `key` | string | no | Channel key for +k channels |
+| Field     | Type   | Required | Description                       |
+|-----------|--------|----------|-----------------------------------|
+| `type`    | string | yes      | `"join"`                          |
+| `channel` | string | yes      | Channel name (e.g. `"#example"`) |
+| `key`     | string | no       | Channel key for +k channels       |
 
 ### `part`
 
 Leave a channel.
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `type` | string | yes | `"part"` |
-| `channel` | string | yes | Channel name |
-| `text` | string | no | Optional part reason |
+| Field     | Type   | Required | Description          |
+|-----------|--------|----------|----------------------|
+| `type`    | string | yes      | `"part"`             |
+| `channel` | string | yes      | Channel name         |
+| `text`    | string | no       | Optional part reason |
 
 ### `message`
 
 Send a PRIVMSG.
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `type` | string | yes | `"message"` |
-| `target` | string | yes | Channel name or nick |
-| `text` | string | yes | Message body |
+| Field    | Type   | Required | Description              |
+|----------|--------|----------|--------------------------|
+| `type`   | string | yes      | `"message"`              |
+| `target` | string | yes      | Channel name or nick     |
+| `text`   | string | yes      | Message body             |
 
 ### `nick`
 
 Change nickname.
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `type` | string | yes | `"nick"` |
-| `nick` | string | yes | New nickname |
+| Field  | Type   | Required | Description   |
+|--------|--------|----------|---------------|
+| `type` | string | yes      | `"nick"`      |
+| `nick` | string | yes      | New nickname  |
 
 ### `raw`
 
 Send a raw IRC line (used by `/raw` and other slash commands the browser handles directly).
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `type` | string | yes | `"raw"` |
-| `line` | string | yes | Full IRC line without trailing CRLF |
+| Field  | Type   | Required | Description                            |
+|--------|--------|----------|----------------------------------------|
+| `type` | string | yes      | `"raw"`                                |
+| `line` | string | yes      | Full IRC line without trailing CRLF    |
 
 > **Note:** Unknown `type` values are silently ignored by the server.
 
@@ -224,14 +224,14 @@ Server hostname extracted from `RPL_MYINFO` (004).
 
 Incremental server metadata updates. The `key` and `value` types vary:
 
-| `key` | `value` type | Source IRC numeric |
-|---|---|---|
-| `"software"` | string | 002 |
-| `"created"` | string | 003 |
-| `"channels"` | number | 254 |
-| `"local_users"` | string | 265 |
-| `"global_users"` | string | 266 |
-| `"admin"` | `[]string` (appended) | 257, 258, 259 |
+| `key`            | `value` type             | Source IRC numeric |
+|------------------|--------------------------|--------------------|
+| `"software"`     | string                   | 002                |
+| `"created"`      | string                   | 003                |
+| `"channels"`     | number                   | 254                |
+| `"local_users"`  | string                   | 265                |
+| `"global_users"` | string                   | 266                |
+| `"admin"`        | `[]string` (appended)    | 257, 258, 259      |
 
 ```json
 { "type": "server_meta", "key": "local_users", "value": "Current local users 42" }
@@ -409,7 +409,7 @@ The server reported a target is away in response to a PRIVMSG or WHOIS (IRC nume
 The client's own away status changed.
 
 ```json
-{ "type": "away_status", "away": true, "text": "You are now marked as away" }
+{ "type": "away_status", "away": true,  "text": "You are now marked as away" }
 { "type": "away_status", "away": false, "text": "You are no longer away" }
 ```
 
@@ -423,15 +423,15 @@ WHOIS data arrives as a sequence of `whois_data` messages (one per field) follow
 
 The `field` discriminator determines which additional fields are present:
 
-| `field` | Extra fields | IRC numeric |
-|---|---|---|
-| `"user"` | `nick`, `ident`, `host`, `realname` | 311 |
-| `"server"` | `nick`, `server`, `location` | 312 |
-| `"ircop"` | `nick` | 313 |
-| `"idle"` | `nick`, `seconds` (number) | 317 |
-| `"channels"` | `nick`, `channels` ([]string) | 319 |
-| `"account"` | `nick`, `account` | 330 |
-| `"secure"` | `nick` | 671 |
+| `field`      | Extra fields                           | IRC numeric |
+|--------------|----------------------------------------|-------------|
+| `"user"`     | `nick`, `ident`, `host`, `realname`    | 311         |
+| `"server"`   | `nick`, `server`, `location`           | 312         |
+| `"ircop"`    | `nick`                                 | 313         |
+| `"idle"`     | `nick`, `seconds` (number)             | 317         |
+| `"channels"` | `nick`, `channels` ([]string)          | 319         |
+| `"account"`  | `nick`, `account`                      | 330         |
+| `"secure"`   | `nick`                                 | 671         |
 
 Examples:
 ```json
@@ -506,17 +506,17 @@ Generic IRC error forwarded to the browser. Sources: `ERR_NICKNAMEINUSE` (433), 
 
 ## Field type summary
 
-| Field | JSON type | Notes |
-|---|---|---|
-| `type` | string | Always present, discriminates message kind |
-| `nick` | string | IRC nickname |
-| `channel` | string | `#channel` |
-| `text` | string | Human-readable text or message body |
-| `ts` | number | Unix timestamp in seconds; present on all chat and channel events |
-| `ms` | number | Round-trip time in milliseconds |
-| `away` | boolean | Only in `away_status` |
-| `nicks` | array of strings | Only in `names_chunk` |
-| `channels` | array of strings | In `resumed` and `whois_data` (field=channels) |
-| `meta` | object | Only in `resumed`; mirrors accumulated `server_meta` keys |
-| `seconds` | number | Idle seconds in `whois_data` (field=idle) |
-| `count` | number | User count in `list_item` |
+| Field      | JSON type        | Notes                                                        |
+|------------|------------------|--------------------------------------------------------------|
+| `type`     | string           | Always present, discriminates message kind                   |
+| `nick`     | string           | IRC nickname                                                 |
+| `channel`  | string           | `#channel`                                                   |
+| `text`     | string           | Human-readable text or message body                          |
+| `ts`       | number           | Unix timestamp in seconds; present on all chat/channel events |
+| `ms`       | number           | Round-trip time in milliseconds                              |
+| `away`     | boolean          | Only in `away_status`                                        |
+| `nicks`    | array of strings | Only in `names_chunk`                                        |
+| `channels` | array of strings | In `resumed` and `whois_data` (field=channels)               |
+| `meta`     | object           | Only in `resumed`; mirrors accumulated `server_meta` keys    |
+| `seconds`  | number           | Idle seconds in `whois_data` (field=idle)                    |
+| `count`    | number           | User count in `list_item`                                    |
