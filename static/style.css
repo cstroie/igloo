@@ -334,7 +334,8 @@ html, body { height: 100%; font-family: var(--font-mono); background: var(--bg);
   color: var(--text-head); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;
 }
 #userlist { flex: 1; overflow-y: auto; padding: 6px 0; }
-#userlist-version { padding: 8px 14px; border-top: 1px solid var(--border); }
+#sidebar-version { padding: 6px 14px 10px; text-align: center; }
+#lag-display { padding: 8px 14px; border-top: 1px solid var(--border); font-size: 0.75rem; text-align: right; color: var(--text-dim); }
 #userlist-panel.wide { width: 220px; }
 .user-item {
   display: flex; align-items: center; justify-content: space-between;

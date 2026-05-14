@@ -336,6 +336,12 @@ func (s *Session) ircLoop(lines <-chan string) {
 			s.mu.Lock()
 			s.lastPong = time.Now()
 			s.mu.Unlock()
+			// If the token is a millisecond timestamp it came from a user-initiated ping.
+			var sentMs int64
+			if _, err := fmt.Sscanf(msg.Trailing, "%d", &sentMs); err == nil {
+				rtt := time.Now().UnixMilli() - sentMs
+				s.sendWS(map[string]any{"type": "server_pong", "ms": rtt})
+			}
 
 		case "001": // welcome — IRC registration complete
 			logger.L.Info("IRC connected", "session", s.ID, "nick", s.Nick)
@@ -424,8 +430,10 @@ func (s *Session) ircLoop(lines <-chan string) {
 				s.writeNow("NOTICE " + msg.Nick + " :\x01" + token + "\x01")
 				continue
 			} else if strings.HasPrefix(text, "\x01VERSION\x01") {
-				// Identify ourselves; the version string is intentionally minimal.
 				s.writeNow("NOTICE " + msg.Nick + " :\x01VERSION wirgloo " + AppVersion + "\x01")
+				continue
+			} else if strings.HasPrefix(text, "\x01TIME\x01") {
+				s.writeNow("NOTICE " + msg.Nick + " :\x01TIME " + time.Now().Format(time.RFC1123) + "\x01")
 				continue
 			} else if strings.HasPrefix(text, "\x01") && strings.HasSuffix(text, "\x01") {
 				// Unrecognised CTCP request — ignore rather than forward to the UI.
@@ -629,10 +637,27 @@ func (s *Session) ircLoop(lines <-chan string) {
 			if len(msg.Params) < 2 {
 				continue
 			}
+			text := msg.Params[1]
 			logger.L.Debug("NOTICE", "session", s.ID, "from", msg.Nick, "target", msg.Params[0])
+			// CTCP VERSION reply: \x01VERSION <string>\x01
+			if strings.HasPrefix(text, "\x01VERSION ") && strings.HasSuffix(text, "\x01") {
+				version := strings.TrimSuffix(strings.TrimPrefix(text, "\x01VERSION "), "\x01")
+				s.sendWS(map[string]any{"type": "ctcp_version_reply", "from": msg.Nick, "version": version})
+				continue
+			}
+			// CTCP PING reply: \x01PING <sent_ms>\x01
+			if strings.HasPrefix(text, "\x01PING ") && strings.HasSuffix(text, "\x01") {
+				token := strings.TrimSuffix(strings.TrimPrefix(text, "\x01PING "), "\x01")
+				var sentMs int64
+				if _, err := fmt.Sscanf(token, "%d", &sentMs); err == nil {
+					rtt := time.Now().UnixMilli() - sentMs
+					s.sendWS(map[string]any{"type": "ctcp_ping_reply", "from": msg.Nick, "ms": rtt})
+				}
+				continue
+			}
 			s.sendWS(map[string]any{
 				"type": "notice", "from": msg.Nick,
-				"target": msg.Params[0], "text": msg.Params[1],
+				"target": msg.Params[0], "text": text,
 				"ts": msgTime(msg),
 			})
 		}

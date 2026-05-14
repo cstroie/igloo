@@ -15,6 +15,7 @@ const state = {
   pendingWhois: null,
   ignored: new Set(),    // client-side ignored nicks
   listItems: [],         // raw {channel, count, topic} from LIST
+  away: false,           // true when marked as away
   network: '',           // NETWORK= value from 005, e.g. "Libera.Chat"
   servername: '',        // server hostname from 004 RPL_MYINFO
   serverMeta: {},        // accumulated server_meta key/value pairs
@@ -26,6 +27,29 @@ const state = {
 };
 
 let reconnectDelay = 1000;
+let lagPingPending = false;
+let lagTimer       = null;
+
+function scheduleLagPing() {
+  clearTimeout(lagTimer);
+  const delay = (60 + Math.random() * 240) * 1000; // 1–5 min random
+  lagTimer = setTimeout(() => {
+    if (state.connected && state.ws) {
+      lagPingPending = true;
+      send({ type: 'raw', line: `PING :${Date.now()}` });
+    }
+    scheduleLagPing();
+  }, delay);
+}
+
+function updateLagDisplay(ms) {
+  const el = $('lag-display');
+  if (!el) return;
+  const color = ms < 100 ? 'var(--join)' : ms < 300 ? '#f59e0b' : 'var(--error)';
+  el.textContent = `⌛ ${ms} ms`;
+  el.style.color = color;
+  el.classList.remove('hidden');
+}
 
 // ── DOM refs ─────────────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
@@ -46,7 +70,7 @@ const userlist      = $('userlist');
 fetch('/version').then(r => r.json()).then(v => {
   const label = `${v.name} ${v.version}`;
   $('connect-version').textContent  = label;
-  $('userlist-version').textContent = label;
+  $('sidebar-version').textContent  = label;
 }).catch(() => {});
 
 // ── Session resume from URL ───────────────────────────────────────────────────
@@ -303,6 +327,26 @@ function handle(msg) {
       break;
     }
 
+    case 'server_pong':
+      if (lagPingPending) {
+        lagPingPending = false;
+        updateLagDisplay(msg.ms);
+      } else {
+        appendMsg('*server*', { type: 'notice', nick: state.servername || state.server, text: `PING reply: ${msg.ms} ms`, ts: Date.now() / 1000 });
+        if (state.active !== '*server*') bumpUnread('*server*', false);
+      }
+      break;
+
+    case 'ctcp_version_reply':
+      appendMsg('*server*', { type: 'notice', nick: msg.from, text: `VERSION: ${msg.version}`, ts: Date.now() / 1000 });
+      if (state.active !== '*server*') bumpUnread('*server*', false);
+      break;
+
+    case 'ctcp_ping_reply':
+      appendMsg('*server*', { type: 'notice', nick: msg.from, text: `PING reply: ${msg.ms} ms`, ts: Date.now() / 1000 });
+      if (state.active !== '*server*') bumpUnread('*server*', false);
+      break;
+
     case 'server_meta':
       state.serverMeta[msg.key] = msg.value;
       if (state.active === '*server*') renderUserlist();
@@ -329,6 +373,7 @@ function handle(msg) {
       reconnectDelay = 1000;
       myNick.textContent = msg.nick;
       state.serverMeta = {};
+      scheduleLagPing();
       applyServerMeta(msg.network, msg.servername, msg.welcome);
       appendMsg('*server*', { type: 'system', nick: '--', text: `Connected to ${state.server} as ${msg.nick}` });
       requestNotifyPermission();
@@ -352,6 +397,7 @@ function handle(msg) {
       state.server = localStorage.getItem('wirgloo_session_server') || '';
       myNick.textContent = msg.nick;
       ensureChannel('*server*');
+      scheduleLagPing();
       if (msg.meta) state.serverMeta = msg.meta;
       applyServerMeta(msg.network, msg.servername, msg.welcome);
       restoreSavedChannels(state.server);
@@ -544,6 +590,8 @@ function handle(msg) {
     }
 
     case 'away_status':
+      state.away = msg.away;
+      $('away-btn').textContent = state.away ? '● Back' : '⏾ Away';
       appendMsg(state.active || '*server*', { type: 'system', nick: '--', text: msg.text });
       break;
 
@@ -1010,6 +1058,17 @@ function renderUserlist() {
       info.innerHTML = rows.join('');
       userlist.appendChild(info);
     }
+
+    footer.innerHTML =
+      `<button id="srv-ping">⌛ Ping</button>` +
+      `<button id="srv-help">? Help</button>`;
+    footer.classList.remove('hidden');
+    footer.querySelector('#srv-ping').addEventListener('click', () => {
+      send({ type: 'raw', line: `PING :${Date.now()}` });
+    });
+    footer.querySelector('#srv-help').addEventListener('click', () => {
+      send({ type: 'raw', line: 'HELP' });
+    });
     return;
   }
 
@@ -1079,12 +1138,20 @@ function renderUserlist() {
       (state.ignored.has(nick.toLowerCase()) ? `<button id="uf-ignore">⊕ UnIgnore</button>` : `<button id="uf-ignore">⊖ Ignore</button>`) +
       `<div class="userlist-footer-sep"></div>` +
       `<button id="whois-btn">⊕ Info</button>` +
+      `<button id="ping-btn">⌛ Ping</button>` +
+      `<button id="version-btn">© Version</button>` +
       `<button id="close-dm-btn" class="danger">✕ Close</button>`;
     footer.classList.remove('hidden');
     footer.querySelector('#whois-btn').addEventListener('click', () => {
       state.whoisCache.delete(nick);
       state.pendingWhois = nick;
       send({ type: 'raw', line: `WHOIS ${nick}` });
+    });
+    footer.querySelector('#ping-btn').addEventListener('click', () => {
+      send({ type: 'raw', line: `PRIVMSG ${nick} :\x01PING ${Date.now()}\x01` });
+    });
+    footer.querySelector('#version-btn').addEventListener('click', () => {
+      send({ type: 'raw', line: `PRIVMSG ${nick} :\x01VERSION\x01` });
     });
     footer.querySelector('#close-dm-btn').addEventListener('click', () => removeChannel(nick));
     footer.querySelector('#uf-ignore').addEventListener('click', () => {
@@ -1436,6 +1503,11 @@ $('restore-cancel-btn').addEventListener('click', () => {
   connectScreen.classList.remove('hidden');
 });
 
+$('away-btn').addEventListener('click', () => {
+  if (state.away) send({ type: 'raw', line: 'AWAY' });
+  else send({ type: 'raw', line: 'AWAY :Away' });
+});
+
 $('disconnect-btn').addEventListener('click', () => {
   state.sessionId = null;
   history.replaceState(null, '', location.pathname);
@@ -1481,6 +1553,8 @@ function onConnectFailed(reason) {
 }
 
 function onDisconnect(reason) {
+  clearTimeout(lagTimer);
+  $('lag-display').classList.add('hidden');
   state.connected = false;
   state.sessionId = null;
   history.replaceState(null, '', location.pathname);
