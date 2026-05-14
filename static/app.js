@@ -469,10 +469,14 @@ function handle(msg) {
       break;
     }
 
-    case 'notice':
+    case 'notice': {
       if (!state.connected) { appendMsg('*server*', { type: 'connecting', nick: msg.from || '--', text: msg.text, ts: msg.ts }); break; }
-      appendMsg(state.active || '*server*', { type: 'notice', nick: msg.from, text: msg.text, ts: msg.ts });
+      const noticeDest = msg.target?.startsWith('#') && state.channels.has(msg.target)
+        ? msg.target
+        : (state.active || '*server*');
+      appendMsg(noticeDest, { type: 'notice', nick: msg.from, text: msg.text, ts: msg.ts });
       break;
+    }
 
     case 'join':
       if (msg.nick === state.nick) {
