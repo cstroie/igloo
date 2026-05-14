@@ -1,0 +1,74 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Build & run
+
+```sh
+make                        # build ./wirgloo (injects VERSION=YYMMDD via -ldflags)
+go build ./...              # quick build without version injection (version = "dev")
+go vet ./...                # static analysis
+```
+
+There are no tests and no linter config files. `go vet` is the only automated check.
+
+Run in development mode so static files are served from disk (no rebuild needed after JS/CSS/HTML edits):
+
+```sh
+./wirgloo -dev -log-level debug
+```
+
+Production binary embeds `static/` at compile time via `//go:embed static/*` in `main.go`.
+
+## Architecture
+
+The server is a single Go binary with no external runtime dependencies. It has two jobs: serve the static single-page UI and proxy IRC over WebSocket.
+
+### Request flow
+
+```
+Browser ──WebSocket──► ws.Handler  ──dispatch──► session.Session.SendIRC
+                                  ◄──sendWS────  session.Session.ircLoop ◄── irc.ReadLoop
+```
+
+**`ws/handler.go`** — upgrades HTTP to WebSocket, reads JSON `inMsg` frames from the browser, calls `dispatch()` which maps `msg.Type` strings to `Session` methods or raw IRC commands. Unknown message types are silently ignored.
+
+**`session/session.go`** — the core. One `Session` per browser tab. Owns the IRC `net.Conn`, the WebSocket `*websocket.Conn`, and four goroutines:
+- `ircLoop` — reads lines from the IRC server, parses them, emits JSON to the browser via `sendWS`
+- `sendLoop` — token-bucket rate limiter (burst 5, 3 lines/sec) draining `sendQ`; bypassed by `writeNow` for PONG/PING/QUIT
+- `pingLoop` — client-initiated PING every 90 s; kills the session if no PONG within 60 s
+- `irc.ReadLoop` (from irc package) — reads raw lines into a channel, closed on disconnect
+
+**`irc/client.go`** — pure IRC protocol: `Dial`, `Handshake`, `ReadLoop`, `ParseLine`. No state. `ParseLine` always appends the trailing parameter into `Params`, so callers can index `msg.Params` uniformly.
+
+**`static/app.js`** — single-file vanilla JS SPA, no framework. State lives in the `state` object at the top. All incoming WebSocket messages are routed through `handle(msg)`. User slash-commands are parsed in `handleCommand()`. No build step.
+
+### WebSocket message protocol
+
+JSON objects with a `"type"` field. Server → browser types: `connected`, `resumed`, `session_expired`, `connect_error`, `disconnected`, `message`, `notice`, `join`, `part`, `nick`, `quit`, `kick`, `mode`, `topic`, `invite`, `names_chunk`, `names_end`, `whois`, `away`, `away_status`, `motd`, `isupport_prefix`, `list_start`, `list_item`, `list_end`, `error`.
+
+Browser → server types (dispatched in `ws/handler.go`): `connect`, `disconnect`, `join`, `part`, `message`, `nick`, `raw`.
+
+### Session lifecycle & reconnection
+
+`Registry` tracks all live sessions by ID. On WebSocket disconnect, `Detach` nulls the WS pointer and starts a 30-minute timer — the IRC connection stays alive. If the browser reconnects within that window (same `?s=<id>` URL param), `Resume` reattaches and flushes the message buffer (capped at 500 entries). After 30 minutes, the session is torn down.
+
+`done` is a channel closed once to signal all goroutines for a session to exit. `Close()` closes `done` and the TCP connection.
+
+### Auth flow
+
+Auth method is chosen at connect time and held in `Session.authMethod`/`authPass`. SASL PLAIN uses full CAP negotiation (`CAP REQ` → `CAP ACK` → `AUTHENTICATE PLAIN` → base64 payload → `903` → `CAP END`). NickServ variants fire after `001`. Server password goes in the `PASS` command during handshake.
+
+### Version
+
+`main.version` is injected at build time via `-ldflags`; falls back to `"dev"`. It is exposed at `GET /version` as `{"name":"wirgloo","version":"..."}` and via `session.AppVersion` (set from `main`) for CTCP VERSION replies and the browser UI.
+
+## Code conventions
+
+- **No framework, no ORM, no generated code.** Keep dependencies minimal — currently only `gorilla/websocket`.
+- **Locking discipline:** `Session.mu` guards all mutable fields. Acquire, copy needed values, release before any I/O or channel send. Never hold `mu` while calling `sendWS` or `writeNow`.
+- **`writeNow` vs `SendIRC`:** Use `writeNow` only for protocol-level messages that must bypass the rate limiter (PONG, internal PING, QUIT, SASL). Everything else goes through `SendIRC` → `sendQ`.
+- **`sendWS`** buffers messages (up to 500) while the WebSocket is detached; it never blocks.
+- Static files in `static/` are plain HTML/CSS/JS — no bundler, no transpiler. Keep it that way.
+- JS state mutations all go through the `state` object. DOM is manipulated directly; no virtual DOM.
+- Go style: `gofmt`, short variable names in short scopes, descriptive names elsewhere. Comments explain *why*, not *what*.
