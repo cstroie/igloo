@@ -1076,7 +1076,7 @@ function renderUserlist() {
               `<button id="uf-ban" class="danger">⊘ Ban</button>` +
               `<button id="uf-kick" class="danger">✕ Kick</button>` +
               `<div class="userlist-footer-sep"></div>` : '') +
-      `<button id="uf-ignore">⊖ Ignore</button>` +
+      (state.ignored.has(nick.toLowerCase()) ? `<button id="uf-ignore">⊕ UnIgnore</button>` : `<button id="uf-ignore">⊖ Ignore</button>`) +
       `<div class="userlist-footer-sep"></div>` +
       `<button id="whois-btn">⊕ Info</button>` +
       `<button id="close-dm-btn" class="danger">✕ Close</button>`;
@@ -1088,7 +1088,9 @@ function renderUserlist() {
     });
     footer.querySelector('#close-dm-btn').addEventListener('click', () => removeChannel(nick));
     footer.querySelector('#uf-ignore').addEventListener('click', () => {
-      state.ignored.add(nick.toLowerCase());
+      const key = nick.toLowerCase();
+      if (state.ignored.has(key)) state.ignored.delete(key);
+      else state.ignored.add(key);
       saveIgnored();
       renderUserlist();
     });
