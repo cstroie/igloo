@@ -580,7 +580,7 @@ func (s *Session) ircLoop(lines <-chan string) {
 			}
 			channel := msg.Params[1]
 			logger.L.Debug("TOPIC", "session", s.ID, "channel", channel)
-			s.sendWS(map[string]any{"type": "topic", "channel": channel, "text": msg.Trailing})
+			s.sendWS(map[string]any{"type": "topic", "channel": channel, "text": msg.Trailing, "nick": ""})
 
 		case "333": // RPL_TOPICWHOTIME
 			if len(msg.Params) < 4 {

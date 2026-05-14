@@ -335,13 +335,12 @@ Channel or user mode change.
 
 #### `topic`
 
-Topic set or changed. Sent for both `TOPIC` commands (with `nick`) and `RPL_TOPIC` (332, no `nick`).
+Topic set or changed. `nick` is the setter for live `TOPIC` commands; empty string when delivered by `RPL_TOPIC` (332, on join).
 
 ```json
 { "type": "topic", "channel": "#channel", "text": "The topic text", "nick": "setter" }
+{ "type": "topic", "channel": "#channel", "text": "The topic text", "nick": "" }
 ```
-
-`nick` is absent when the topic comes from `RPL_TOPIC` (332).
 
 #### `topic_meta`
 
