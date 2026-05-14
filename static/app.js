@@ -241,6 +241,34 @@ function restoreSavedChannels(server) {
     const sel = $('network');
     if ([...sel.options].some(o => o.value === lastNet)) { sel.value = lastNet; applyNetworkSelection(lastNet); }
   }
+
+  // Pre-fill form from URL params (?server=…&port=…&tls=1&nick=…&channel=…).
+  // Skipped when ?s= is present (session restore takes priority).
+  const qp = new URLSearchParams(location.search);
+  if (!qp.has('s') && qp.has('server')) {
+    const srv      = qp.get('server');
+    const tls      = qp.get('tls') === '1' || qp.get('tls') === 'true';
+    const port     = parseInt(qp.get('port')) || (tls ? 6697 : 6667);
+    const nick     = qp.get('nick') || '';
+    const realname = qp.get('realname') || '';
+    const auth     = qp.get('auth') || 'none';
+    const pass     = qp.get('pass') || '';
+    $('network').value = 'custom';
+    applyNetworkSelection('custom');
+    $('server').value   = srv;
+    $('port').value     = port;
+    $('tls').checked    = tls;
+    $('tls').dispatchEvent(new Event('change'));
+    if (qp.get('noverify') === '1') $('noverify').checked = true;
+    if (nick)     $('nick').value = nick;
+    if (realname) $('realname').value = realname;
+    if (auth !== 'none') { $('auth-method').value = auth; $('pass-field').classList.remove('hidden'); }
+    if (pass)     $('pass').value = pass;
+    saveProfile({ server: srv, port, tls, nick });
+    renderSavedProfiles();
+    const ch = qp.get('channel');
+    if (ch) state.pendingChannel = ch.startsWith('#') ? ch : '#' + ch;
+  }
 })();
 
 // ── Connect form ─────────────────────────────────────────────────────────────
@@ -384,6 +412,10 @@ function handle(msg) {
       appendMsg('*server*', { type: 'system', nick: '--', text: `Connected to ${state.server} as ${msg.nick}` });
       requestNotifyPermission();
       restoreSavedChannels(state.server);
+      if (state.pendingChannel) {
+        send({ type: 'join', channel: state.pendingChannel });
+        state.pendingChannel = null;
+      }
       // re-join channels that were active before a session_expired reconnect
       if (wasReconnect) {
         state.channels.forEach((ch, target) => {

@@ -96,6 +96,28 @@ wirgloo -log-json              # emit logs as JSON instead of text
 
 Open `http://localhost:6677` in your browser, choose a network or enter a custom server, fill in your nick, and connect.
 
+### URL parameters
+
+The connect form can be pre-filled via query parameters — useful for bookmarks, shared links, or embedding:
+
+```
+http://localhost:6677/?server=irc.libera.chat&tls=1&nick=mynick&channel=%23linux
+```
+
+| Parameter  | Description                                      | Default            |
+|------------|--------------------------------------------------|--------------------|
+| `server`   | IRC server hostname (required to pre-fill)       | —                  |
+| `port`     | IRC port                                         | 6697 (TLS) / 6667  |
+| `tls`      | Use TLS — `1` or `true`                          | `false`            |
+| `noverify` | Skip TLS cert verification — `1`                 | `false`            |
+| `nick`     | Default nick                                     | —                  |
+| `realname` | Real name / GECOS                                | same as nick       |
+| `auth`     | Auth method: `none`, `sasl`, `nickserv`, `ns-msg`| `none`             |
+| `pass`     | Password for the chosen auth method              | —                  |
+| `channel`  | Channel to join after connecting                 | —                  |
+
+The profile is saved to localStorage on page load. If a `?s=` session-restore parameter is also present, it takes priority and the URL parameters are ignored.
+
 ## Project layout
 
 ```

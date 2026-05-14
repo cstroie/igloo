@@ -54,13 +54,13 @@
 - [ ] /rejoin shortcut (part + join, useful after kicks or netsplits)
 - [x] Clickable nicks in chat — open DM
 - [X] Implement arrow-up command/messages history (javascript, runtime)
-- [ ] Open new connection by specifying directly the parameters in GET URL
+- [x] Open new connection by specifying directly the parameters in GET URL
 
 ### IRC features
 - [x] CTCP VERSION reply
 - [x] +R/+m mode awareness — warn or dim input when you can't speak
 - [x] Channel key memory — remember +k key for auto-rejoin
-- [ ] Show lag
+- [X] Show lag
 
 ### Comfort
 - [ ] Message search within a channel (/search keyword)
@@ -68,5 +68,5 @@
 - [ ] Sound notification option alongside browser notifications
 
 ### Programming
- - [ ] Document the websocket protocol messages
+ - [X] Document the websocket protocol messages
 
