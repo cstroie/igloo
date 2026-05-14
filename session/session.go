@@ -492,11 +492,11 @@ func (s *Session) ircLoop(lines <-chan string) {
 			s.sendWS(map[string]any{"type": "nick", "old": msg.Nick, "new": newNick})
 
 		case "AWAY": // away-notify CAP: nick set or cleared away status
-			s.sendWS(map[string]any{"type": "away", "nick": msg.Nick, "text": msg.Trailing})
+			s.sendWS(map[string]any{"type": "away", "nick": msg.Nick, "away": msg.Trailing != "", "text": msg.Trailing})
 
 		case "301": // RPL_AWAY — target is away (received during WHOIS or when messaging someone away)
 			if len(msg.Params) >= 2 {
-				s.sendWS(map[string]any{"type": "away", "nick": msg.Params[1], "text": msg.Trailing, "source": "301"})
+				s.sendWS(map[string]any{"type": "away_reply", "nick": msg.Params[1], "text": msg.Trailing})
 			}
 
 		case "305": // RPL_UNAWAY

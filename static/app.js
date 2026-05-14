@@ -596,12 +596,18 @@ function handle(msg) {
       break;
 
     case 'away': {
-      const isBack = !msg.text;
       const w = state.whoisUsers.get(msg.nick) || {};
-      w.away = !isBack; w.awayMsg = isBack ? '' : msg.text;
+      w.away = msg.away; w.awayMsg = msg.away ? msg.text : '';
       state.whoisUsers.set(msg.nick, w);
-      if (!isBack && msg.source === '301')
-        appendMsg(state.active || '*server*', { type: 'system', nick: '--', text: `${msg.nick} is away: ${msg.text}` });
+      renderUserlist();
+      break;
+    }
+
+    case 'away_reply': {
+      const w = state.whoisUsers.get(msg.nick) || {};
+      w.away = true; w.awayMsg = msg.text;
+      state.whoisUsers.set(msg.nick, w);
+      appendMsg(state.active || '*server*', { type: 'system', nick: '--', text: `${msg.nick} is away: ${msg.text}` });
       renderUserlist();
       break;
     }

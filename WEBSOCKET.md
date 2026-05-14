@@ -384,17 +384,19 @@ Nicks include mode prefixes as returned by the server (e.g. `@`, `+`). With `mul
 
 #### `away`
 
-A user's away status changed (via `away-notify` CAP) or the client messaged someone who is away (301).
+A user's away status changed (via `away-notify` CAP). `away: false` means the user returned.
 
 ```json
-{ "type": "away", "nick": "someone", "text": "Gone for lunch" }
+{ "type": "away", "nick": "someone", "away": true,  "text": "Gone for lunch" }
+{ "type": "away", "nick": "someone", "away": false, "text": "" }
 ```
 
-When `text` is empty (`""`), the user returned from away.
+#### `away_reply`
 
-Additional field when sourced from numeric 301:
+The server reported a target is away in response to a PRIVMSG or WHOIS (IRC numeric 301). Only sent when the target is away — there is no "returned" variant.
+
 ```json
-{ "type": "away", "nick": "someone", "text": "brb", "source": "301" }
+{ "type": "away_reply", "nick": "someone", "text": "brb" }
 ```
 
 #### `away_status`
