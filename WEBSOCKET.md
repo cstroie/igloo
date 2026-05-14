@@ -328,10 +328,10 @@ A user changed their nickname.
 
 #### `mode`
 
-Channel or user mode change.
+Channel or user mode change. `mode` is the full human-readable string for display. `flags` and `params` are the parsed components for programmatic use.
 
 ```json
-{ "type": "mode", "target": "#channel", "mode": "+o someone", "nick": "op" }
+{ "type": "mode", "target": "#channel", "mode": "+oo nick1 nick2", "flags": "+oo", "params": ["nick1", "nick2"], "nick": "op", "ts": 123 }
 ```
 
 `nick` is the user who set the mode (empty string for server-set modes).

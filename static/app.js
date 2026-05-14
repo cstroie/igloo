@@ -516,14 +516,15 @@ function handle(msg) {
       // track channel modes for +m/+R awareness and +k key memory
       const ch = state.channels.get(msg.target);
       if (ch) {
-        const parts = msg.mode.split(' ');
-        const flags = parts[0] || '';
-        const param = parts[1] || '';
-        let add = true;
+        const flags  = msg.flags || msg.mode.split(' ')[0] || '';
+        const params = msg.params || msg.mode.split(' ').slice(1);
+        let add = true, paramIdx = 0;
         for (const c of flags) {
           if (c === '+') { add = true; continue; }
           if (c === '-') { add = false; continue; }
-          if (c === 'k') { ch.key = add ? param : ''; continue; }
+          if (c === 'k') { ch.key = add ? (params[paramIdx] || '') : ''; paramIdx++; continue; }
+          // modes with a parameter consume one entry from params
+          if ('ovhaqbeIl'.includes(c)) paramIdx++;
           if (add) ch.modes.add(c); else ch.modes.delete(c);
         }
         if (dest === state.active) updateInputState();
