@@ -87,6 +87,7 @@ Leave a channel.
 |---|---|---|---|
 | `type` | string | yes | `"part"` |
 | `channel` | string | yes | Channel name |
+| `text` | string | no | Optional part reason |
 
 ### `message`
 
@@ -290,8 +291,10 @@ A user (possibly the client itself) joined a channel.
 A user left a channel.
 
 ```json
-{ "type": "part", "nick": "someone", "channel": "#channel" }
+{ "type": "part", "nick": "someone", "channel": "#channel", "text": "Goodbye" }
 ```
+
+`text` is the IRC part reason; empty string when no reason was given.
 
 #### `quit`
 

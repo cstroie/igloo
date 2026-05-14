@@ -501,7 +501,7 @@ function handle(msg) {
         saveChannels(state.server); saveDMs(state.server);
       } else {
         state.channels.get(msg.channel)?.nicks.delete(msg.nick);        renderUserlist();
-        appendMsg(msg.channel, { type: 'part', nick: '', text: `← ${msg.nick} left ${msg.channel}` });
+        appendMsg(msg.channel, { type: 'part', nick: '', text: `← ${msg.nick} left ${msg.channel}${msg.text ? ' (' + msg.text + ')' : ''}` });
       }
       break;
 

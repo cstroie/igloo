@@ -470,7 +470,7 @@ func (s *Session) ircLoop(lines <-chan string) {
 				delete(s.channels, channel)
 				s.mu.Unlock()
 			}
-			s.sendWS(map[string]any{"type": "part", "nick": msg.Nick, "channel": channel})
+			s.sendWS(map[string]any{"type": "part", "nick": msg.Nick, "channel": channel, "text": msg.Trailing})
 
 		case "TOPIC":
 			if len(msg.Params) > 0 {

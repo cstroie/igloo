@@ -133,6 +133,9 @@ func dispatch(s *session.Session, msg inMsg) error {
 		}
 		return s.SendIRC("JOIN " + msg.Channel)
 	case "part":
+		if msg.Text != "" {
+			return s.SendIRC("PART " + msg.Channel + " :" + msg.Text)
+		}
 		return s.SendIRC("PART " + msg.Channel)
 	case "message":
 		return s.SendIRC(fmt.Sprintf("PRIVMSG %s :%s", msg.Target, msg.Text))
