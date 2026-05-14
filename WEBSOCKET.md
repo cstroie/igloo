@@ -423,7 +423,7 @@ The `field` discriminator determines which additional fields are present:
 | `"user"` | `nick`, `ident`, `host`, `realname` | 311 |
 | `"server"` | `nick`, `server`, `location` | 312 |
 | `"ircop"` | `nick` | 313 |
-| `"idle"` | `nick`, `seconds` (string) | 317 |
+| `"idle"` | `nick`, `seconds` (number) | 317 |
 | `"channels"` | `nick`, `channels` ([]string) | 319 |
 | `"account"` | `nick`, `account` | 330 |
 | `"secure"` | `nick` | 671 |
@@ -431,7 +431,7 @@ The `field` discriminator determines which additional fields are present:
 Examples:
 ```json
 { "type": "whois_data", "nick": "someone", "field": "user", "ident": "u", "host": "example.com", "realname": "Real Name" }
-{ "type": "whois_data", "nick": "someone", "field": "idle", "seconds": "120" }
+{ "type": "whois_data", "nick": "someone", "field": "idle", "seconds": 120 }
 { "type": "whois_data", "nick": "someone", "field": "channels", "channels": ["#foo", "@#bar"] }
 ```
 

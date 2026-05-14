@@ -527,7 +527,8 @@ func (s *Session) ircLoop(lines <-chan string) {
 			if len(msg.Params) < 3 {
 				continue
 			}
-			s.sendWS(map[string]any{"type": "whois_data", "nick": msg.Params[1], "field": "idle", "seconds": msg.Params[2]})
+			idleSecs, _ := strconv.Atoi(msg.Params[2])
+			s.sendWS(map[string]any{"type": "whois_data", "nick": msg.Params[1], "field": "idle", "seconds": idleSecs})
 
 		case "318": // RPL_ENDOFWHOIS
 			if len(msg.Params) < 2 {
