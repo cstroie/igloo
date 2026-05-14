@@ -461,7 +461,7 @@ function handle(msg) {
         send({ type: 'raw', line: `WHOIS ${msg.from}` });
       }
       const isMe = msg.text.startsWith('/me ');
-      const isMention = !isMe && (target === msg.from || msg.text.includes(state.nick));
+      const isMention = !isMe && msg.text.toLowerCase().includes(state.nick.toLowerCase());
       const cls  = isMe ? 'me' : (isMention ? 'mention' : '');
       appendMsg(target, { type: cls || 'msg', nick: msg.from, text: msg.text, ts: msg.ts });
       if (target !== state.active) bumpUnread(target, isMention, msg.from, msg.text);
@@ -944,7 +944,7 @@ function canGroup(m, prevNick, prevTs, prevType) {
   // consecutive system-type messages always collapse (different nicks each time)
   if (SYSTEM_TYPES.has(cls) && SYSTEM_TYPES.has(prevType)) return true;
   // chat messages group when same nick within 2 minutes
-  const chatGroupable = new Set(['msg', 'notice', 'motd', 'whois', 'connecting']);
+  const chatGroupable = new Set(['msg', 'me', 'mention', 'notice', 'motd', 'whois', 'connecting']);
   return chatGroupable.has(cls) && m.nick && m.nick === prevNick && (m.ts - prevTs) < 120;
 }
 
