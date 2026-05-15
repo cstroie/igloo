@@ -114,6 +114,9 @@ const NETWORKS = {
   geekshed: { server: 'irc.geekshed.net',  port: 6697, tls: true  },
   radiochat:{ server: 'irc.radiochat.org', port: 6697, tls: true  },
   sdf:      { server: 'irc.sdf.org',       port: 6697, tls: true  },
+  tildechat:{ server: 'irc.tilde.chat',   port: 6697, tls: true  },
+  hackint:  { server: 'irc.hackint.org',  port: 6697, tls: true  },
+  espernet: { server: 'irc.esper.net',    port: 6697, tls: true  },
 };
 
 // ── Saved profiles ────────────────────────────────────────────────────────────
@@ -406,6 +409,7 @@ function handle(msg) {
     case 'connected': {
       const wasReconnect = state.connectParams && !state.connected;
       state.connected = true;
+      resetAutoAway();
       state.sessionId = msg.session;
       state.nick = msg.nick;
       restoreScreen.classList.add('hidden');
@@ -438,6 +442,7 @@ function handle(msg) {
 
     case 'resumed': {
       state.connected = true;
+      resetAutoAway();
       reconnectDelay = 1000;
       state.nick = msg.nick;
       state.server = localStorage.getItem('wirgloo_session_server') || '';
@@ -1614,6 +1619,31 @@ $('disconnect-btn').addEventListener('click', () => {
   setTimeout(() => { state.ws?.close(); onDisconnect('Disconnected'); }, 300);
 });
 
+// ── Auto-away ─────────────────────────────────────────────────────────────────
+const AUTO_AWAY_MS = 5 * 60 * 1000;
+const AUTO_AWAY_MSG = 'Auto-away';
+let autoAwayTimer = null;
+let autoAwayActive = false;
+
+function resetAutoAway() {
+  if (autoAwayActive) {
+    autoAwayActive = false;
+    send({ type: 'raw', line: 'AWAY' });
+  }
+  clearTimeout(autoAwayTimer);
+  if (state.connected) {
+    autoAwayTimer = setTimeout(() => {
+      if (!state.away) {
+        autoAwayActive = true;
+        send({ type: 'raw', line: `AWAY :${AUTO_AWAY_MSG}` });
+      }
+    }, AUTO_AWAY_MS);
+  }
+}
+
+document.addEventListener('keydown', resetAutoAway);
+document.addEventListener('mousedown', resetAutoAway);
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function send(obj) {
   if (state.ws && state.ws.readyState === WebSocket.OPEN) {
@@ -1654,6 +1684,8 @@ function onConnectFailed(reason) {
 function onDisconnect(reason) {
   clearTimeout(lagTimer);
   clearTimeout(listFilterTimer);
+  clearTimeout(autoAwayTimer);
+  autoAwayActive = false;
   updateLagDisplay(null);
   state.connected = false;
   state.sessionId = null;
