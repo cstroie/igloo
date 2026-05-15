@@ -21,10 +21,18 @@ import (
 	"wirgloo/session"
 )
 
-// upgrader promotes HTTP connections to WebSocket. CheckOrigin is permissive
-// because wirgloo is a self-hosted tool where the operator controls the origin.
+// upgrader promotes HTTP connections to WebSocket. CheckOrigin validates that
+// the request origin matches the server host to prevent cross-site WebSocket
+// hijacking. Requests with no Origin header (e.g. native clients, curl) are
+// allowed because they cannot be forged by a browser.
 var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool { return true },
+	CheckOrigin: func(r *http.Request) bool {
+		origin := r.Header.Get("Origin")
+		if origin == "" {
+			return true // non-browser client
+		}
+		return origin == "http://"+r.Host || origin == "https://"+r.Host
+	},
 }
 
 // inMsg is the JSON envelope sent by the browser over the WebSocket.

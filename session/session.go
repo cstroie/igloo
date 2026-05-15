@@ -223,7 +223,7 @@ func (s *Session) sendLoop(conn net.Conn) {
 
 	flush := func() {
 		for tokens > 0 && len(pending) > 0 {
-			logger.L.Debug("irc send", "session", s.ID, "line", pending[0])
+			logger.L.Debug("irc send", "session", s.ID, "line", redactIRC(pending[0]))
 			irc.WriteLine(conn, pending[0])
 			pending = pending[1:]
 			tokens--
@@ -253,7 +253,7 @@ func (s *Session) writeNow(line string) {
 	conn := s.conn
 	s.mu.Unlock()
 	if conn != nil {
-		logger.L.Debug("irc send", "session", s.ID, "line", line)
+		logger.L.Debug("irc send", "session", s.ID, "line", redactIRC(line))
 		irc.WriteLine(conn, line)
 	}
 }
@@ -843,6 +843,23 @@ func (s *Session) Close() {
 		s.conn.Close()
 	}
 	s.mu.Unlock()
+}
+
+// redactIRC replaces the payload of sensitive IRC commands with "***" so
+// passwords never appear in debug logs.
+func redactIRC(line string) string {
+	upper := strings.ToUpper(line)
+	for _, cmd := range []string{"PASS ", "AUTHENTICATE ", "NICKSERV IDENTIFY ", "PRIVMSG NICKSERV :"} {
+		if strings.HasPrefix(upper, cmd) {
+			return line[:len(cmd)] + "***"
+		}
+	}
+	// NickServ IDENTIFY sent as PRIVMSG: "PRIVMSG NickServ :IDENTIFY <pass>"
+	if strings.HasPrefix(upper, "PRIVMSG NICKSERV :IDENTIFY ") ||
+		strings.HasPrefix(upper, "PRIVMSG NICKSERV :IDENTIFY\t") {
+		return line[:strings.Index(upper, ":IDENTIFY ")+len(":IDENTIFY ")] + "***"
+	}
+	return line
 }
 
 // newID generates a random 8-byte hex session identifier.
