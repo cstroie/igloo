@@ -215,8 +215,9 @@ function saveDMs(server) {
 function restoreSavedChannels(server) {
   const srv = loadSrv(server);
   (srv.channels || []).forEach(ch => {
-    if (!state.channels.has(ch))
-      state.channels.set(ch, { messages: [], nicks: new Map(), unread: 0, mention: false, topic: '', modes: new Set(), key: '', offline: true });
+    const k = chanKey(ch);
+    if (!state.channels.has(k))
+      state.channels.set(k, { messages: [], nicks: new Map(), unread: 0, mention: false, topic: '', modes: new Set(), key: '', offline: true });
   });
   (srv.dms || []).forEach(nick => { if (!state.channels.has(nick)) ensureChannel(nick); });
   renderChannelList();
@@ -345,6 +346,9 @@ function openWS(server, port, nick, realname, tls, noverify, authMethod, pass) {
 
 // ── Message handler ───────────────────────────────────────────────────────────
 function handle(msg) {
+  // Normalise channel names to lowercase so #QuakeNet and #quakenet are the same key.
+  if (msg.channel) msg.channel = chanKey(msg.channel);
+  if (msg.target && msg.target.startsWith('#')) msg.target = chanKey(msg.target);
   switch (msg.type) {
     case 'isupport_prefix': {
       // Parse PREFIX=(modes)symbols, e.g. "(qaohv)~&@%+"
@@ -446,10 +450,11 @@ function handle(msg) {
       restoreSavedChannels(state.server);
       // ensure any channels the server knows about are present and marked live
       (msg.channels || []).forEach(ch => {
-        if (!state.channels.has(ch))
-          state.channels.set(ch, { messages: [], nicks: new Map(), unread: 0, mention: false, topic: '', modes: new Set(), key: '', offline: false });
+        const k = chanKey(ch);
+        if (!state.channels.has(k))
+          state.channels.set(k, { messages: [], nicks: new Map(), unread: 0, mention: false, topic: '', modes: new Set(), key: '', offline: false });
         else
-          state.channels.get(ch).offline = false;
+          state.channels.get(k).offline = false;
       });
       renderChannelList();
       setActive('*server*');
@@ -784,7 +789,14 @@ function loadLog(server, target) {
 }
 
 // ── Channels ──────────────────────────────────────────────────────────────────
+// IRC channel names are case-insensitive; normalise to lowercase so that
+// #QuakeNet and #quakenet always refer to the same entry in state.channels.
+function chanKey(target) {
+  return target.startsWith('#') ? target.toLowerCase() : target;
+}
+
 function ensureChannel(target) {
+  target = chanKey(target);
   if (!state.channels.has(target)) {
     const history = loadLog(state.server, target);
     const messages = history.length
@@ -1397,9 +1409,10 @@ function handleCommand(raw) {
   switch (cmd.toUpperCase()) {
     case 'JOIN': {
       const [jchan, jkey] = arg.split(/\s+/, 2);
+      const jchanKey = chanKey(jchan);
       send({ type: 'join', channel: jchan, ...(jkey ? { key: jkey } : {}) });
       // pre-seed key so auto-rejoin can use it before MODE arrives
-      if (jkey) { ensureChannel(jchan); state.channels.get(jchan).key = jkey; }
+      if (jkey) { ensureChannel(jchanKey); state.channels.get(jchanKey).key = jkey; }
       break;
     }
     case 'PART':
@@ -1571,7 +1584,7 @@ $('list-btn').addEventListener('click', () => {
 $('join-btn').addEventListener('click', () => {
   openPanel(null);
   const ch = prompt('Channel to join:');
-  if (ch) send({ type: 'join', channel: ch.startsWith('#') ? ch : '#' + ch });
+  if (ch) send({ type: 'join', channel: chanKey(ch.startsWith('#') ? ch : '#' + ch) });
 });
 
 $('nick-btn').addEventListener('click', () => {
