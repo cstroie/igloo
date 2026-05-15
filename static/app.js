@@ -20,6 +20,10 @@ const state = {
   servername: '',        // server hostname from 004 RPL_MYINFO
   serverMeta: {},        // accumulated server_meta key/value pairs
   listSort: 'users',     // 'name' | 'users' | 'topic'
+  listFilter: '',        // current filter query sent to the backend
+  listTotal: 0,          // total channels in the server's list
+  listShown: 0,          // channels matching the current filter
+  listCapped: false,     // true when showing only the top-N preview
   dmOriginChannel: null, // channel active when a DM was opened from the user list
   // prefix support — populated from server 005 PREFIX token
   prefixRank:  {'~':0,'&':1,'@':2,'%':3,'+':4}, // symbol → rank (lower = higher privilege)
@@ -662,6 +666,13 @@ function handle(msg) {
 
     case 'list_start':
       state.listItems = [];
+      state.listTotal = 0;
+      state.listShown = 0;
+      state.listCapped = false;
+      if (msg.filter == null) {
+        state.listFilter = '';
+        $('list-filter').value = '';
+      }
       ensureChannel('*list*');
       state.channels.get('*list*').messages = [];
       if (state.active !== '*list*') setActive('*list*');
@@ -670,10 +681,12 @@ function handle(msg) {
 
     case 'list_item':
       state.listItems.push({ channel: msg.channel, count: parseInt(msg.count) || 0, topic: msg.topic || '' });
-      if (state.active === '*list*') renderListMessages();
       break;
 
     case 'list_end':
+      state.listTotal = msg.total || state.listItems.length;
+      state.listShown = msg.shown || state.listItems.length;
+      state.listCapped = !!msg.capped;
       if (state.active === '*list*') renderListMessages();
       break;
 
@@ -840,14 +853,8 @@ function renderListBar() {
 }
 
 function renderListMessages() {
-  const sorters = {
-    name:  (a, b) => a.channel.localeCompare(b.channel),
-    users: (a, b) => b.count - a.count,
-    topic: (a, b) => a.topic.localeCompare(b.topic),
-  };
-  const sorted = [...state.listItems].sort(sorters[state.listSort] || sorters.users);
-  messages.innerHTML = '';
-  sorted.forEach(item => {
+  const frag = document.createDocumentFragment();
+  state.listItems.forEach(item => {
     const el = document.createElement('div');
     el.className = 'msg list';
     el.innerHTML = `
@@ -859,12 +866,18 @@ function renderListMessages() {
     el.querySelector('.list-join').addEventListener('click', () => {
       send({ type: 'join', channel: item.channel });
     });
-    messages.appendChild(el);
+    frag.appendChild(el);
   });
   const summary = document.createElement('div');
   summary.className = 'msg system';
-  summary.innerHTML = `<span class="ts"></span><span class="body"><span class="nick-col"></span><span class="text">${sorted.length} channels</span></span>`;
-  messages.appendChild(summary);
+  let statusText = state.listFilter
+    ? `${state.listShown} of ${state.listTotal} channels`
+    : `${state.listTotal} channels`;
+  if (state.listCapped) statusText += ` — showing top 50, type to filter`;
+  summary.innerHTML = `<span class="ts"></span><span class="body"><span class="nick-col"></span><span class="text">${statusText}</span></span>`;
+  frag.appendChild(summary);
+  messages.innerHTML = '';
+  messages.appendChild(frag);
 }
 
 function updateTitle() {
@@ -1534,6 +1547,15 @@ $('list-sort-bar').addEventListener('click', e => {
   state.listSort = btn.dataset.sort;
   renderListBar();
   renderListMessages();
+});
+
+let listFilterTimer = null;
+$('list-filter').addEventListener('input', e => {
+  state.listFilter = e.target.value.trim();
+  clearTimeout(listFilterTimer);
+  listFilterTimer = setTimeout(() => {
+    send({ type: 'list_filter', text: state.listFilter });
+  }, 300);
 });
 
 // ── Sidebar buttons ───────────────────────────────────────────────────────────

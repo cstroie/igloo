@@ -144,6 +144,8 @@ func dispatch(s *session.Session, msg inMsg) error {
 	case "raw":
 		// Allows the browser to send arbitrary IRC lines (e.g. /raw).
 		return s.SendIRC(msg.Line)
+	case "list_filter":
+		s.FilterList(msg.Text)
 	}
 	return nil
 }

@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -36,6 +37,7 @@ const wsReconnectWindow = 30 * time.Minute // idle WS window before the IRC conn
 const bufferMax         = 500              // max IRC messages buffered while the WS is detached
 const pingInterval      = 90 * time.Second // how often to send a client-initiated PING to the server
 const pingTimeout       = 60 * time.Second // max time to wait for a PONG before declaring the link dead
+const listPreviewSize   = 50               // channels sent to the browser before any filter is applied
 
 const (
 	sendBurst    = 5                      // initial token allowance for the outbound rate limiter
@@ -45,6 +47,13 @@ const (
 // Session represents one connected browser client and its associated IRC
 // connection. All fields are protected by mu except ID and done, which are
 // immutable after creation and safe to read without holding the lock.
+// listEntry is one row from an IRC LIST response.
+type listEntry struct {
+	channel string
+	count   int
+	topic   string
+}
+
 type Session struct {
 	ID         string          // unique session identifier, hex-encoded random bytes
 	Nick       string          // current IRC nick, updated on NICK events
@@ -62,6 +71,7 @@ type Session struct {
 	servername string          // server hostname from 004 RPL_MYINFO
 	welcome    string          // trailing text of the 001 welcome numeric
 	meta       map[string]any  // accumulated server metadata sent to the browser
+	listBuf    []listEntry     // accumulated LIST rows, sorted and filtered on demand
 }
 
 // Registry is a thread-safe map of active sessions keyed by session ID.
@@ -562,6 +572,9 @@ func (s *Session) ircLoop(lines <-chan string) {
 		case "376": // RPL_ENDOFMOTD — no message needed
 
 		case "321": // RPL_LISTSTART
+			s.mu.Lock()
+			s.listBuf = s.listBuf[:0]
+			s.mu.Unlock()
 			s.sendWS(map[string]any{"type": "list_start"})
 
 		case "322": // RPL_LIST
@@ -569,13 +582,12 @@ func (s *Session) ircLoop(lines <-chan string) {
 				continue
 			}
 			count, _ := strconv.Atoi(msg.Params[2])
-			s.sendWS(map[string]any{
-				"type": "list_item", "channel": msg.Params[1],
-				"count": count, "topic": msg.Trailing,
-			})
+			s.mu.Lock()
+			s.listBuf = append(s.listBuf, listEntry{channel: msg.Params[1], count: count, topic: msg.Trailing})
+			s.mu.Unlock()
 
 		case "323": // RPL_LISTEND
-			s.sendWS(map[string]any{"type": "list_end"})
+			s.sendListResults("")
 
 		case "332": // RPL_TOPIC
 			if len(msg.Params) < 2 {
@@ -712,6 +724,43 @@ func (s *Session) SendIRC(line string) error {
 		logger.L.Warn("send queue full, dropping line", "session", s.ID, "line", line)
 	}
 	return nil
+}
+
+// sendListResults filters and sorts listBuf then sends the results to the
+// browser. An empty query sends the top listPreviewSize channels by user count.
+func (s *Session) sendListResults(query string) {
+	s.mu.Lock()
+	all := make([]listEntry, len(s.listBuf))
+	copy(all, s.listBuf)
+	s.mu.Unlock()
+
+	q := strings.ToLower(query)
+	var filtered []listEntry
+	for _, e := range all {
+		if q == "" || strings.Contains(strings.ToLower(e.channel), q) || strings.Contains(strings.ToLower(e.topic), q) {
+			filtered = append(filtered, e)
+		}
+	}
+
+	sort.Slice(filtered, func(i, j int) bool { return filtered[i].count > filtered[j].count })
+
+	total := len(all)
+	shown := len(filtered)
+	capped := shown > listPreviewSize && q == ""
+	if capped {
+		filtered = filtered[:listPreviewSize]
+	}
+
+	s.sendWS(map[string]any{"type": "list_start", "filter": query})
+	for _, e := range filtered {
+		s.sendWS(map[string]any{"type": "list_item", "channel": e.channel, "count": e.count, "topic": e.topic})
+	}
+	s.sendWS(map[string]any{"type": "list_end", "total": total, "shown": shown, "capped": capped})
+}
+
+// FilterList re-filters the cached LIST results and sends them to the browser.
+func (s *Session) FilterList(query string) {
+	s.sendListResults(query)
 }
 
 // Quit sends a QUIT message immediately (bypassing the rate limiter) and

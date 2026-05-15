@@ -445,6 +445,13 @@ html, body { height: 100%; font-family: var(--font-mono); background: var(--bg);
   padding: 6px 18px; background: var(--bg2); border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
+#list-filter {
+  margin-left: auto; background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 5px; color: var(--text); font-family: var(--font-mono); font-size: 0.75rem;
+  padding: 3px 10px; outline: none; width: 180px;
+}
+#list-filter:focus { border-color: var(--accent); }
+#list-filter::placeholder { color: var(--text-dim); }
 .sort-label { color: var(--text-dim); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.6px; margin-right: 4px; }
 .sort-btn {
   background: var(--bg3); border: 1px solid transparent; border-radius: 5px;
