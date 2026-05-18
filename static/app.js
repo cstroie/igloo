@@ -1334,6 +1334,43 @@ $('userlist-toggle').addEventListener('click', () => {
   const isOpen = document.getElementById('userlist-panel').classList.contains('open');
   openPanel(isOpen ? null : 'userlist');
 });
+// Swipe gestures for slide-in panels (mobile only)
+{
+  const SWIPE_MIN = 40;   // px horizontal travel required
+  const SWIPE_MAX = 80;   // px vertical travel allowed before we bail
+  const EDGE     = 30;    // px from screen edge to start a new-panel swipe
+  let t0x = 0, t0y = 0, startedFromEdge = false;
+
+  document.addEventListener('touchstart', e => {
+    const t = e.touches[0];
+    t0x = t.clientX; t0y = t.clientY;
+    startedFromEdge = t0x < EDGE || t0x > window.innerWidth - EDGE;
+  }, { passive: true });
+
+  document.addEventListener('touchend', e => {
+    const t = e.changedTouches[0];
+    const dx = t.clientX - t0x, dy = t.clientY - t0y;
+    if (Math.abs(dy) > SWIPE_MAX || Math.abs(dx) < SWIPE_MIN) return;
+
+    const sidebarOpen = document.getElementById('sidebar').classList.contains('open');
+    const userlistOpen = document.getElementById('userlist-panel').classList.contains('open');
+
+    if (dx > 0) {
+      // swipe right: open sidebar (from left edge or anywhere if nothing open)
+      if (startedFromEdge || (!sidebarOpen && !userlistOpen))
+        openPanel(sidebarOpen ? null : 'sidebar');
+      else if (userlistOpen)
+        openPanel(null);
+    } else {
+      // swipe left: open userlist (from right edge or anywhere if nothing open)
+      if (startedFromEdge || (!sidebarOpen && !userlistOpen))
+        openPanel(userlistOpen ? null : 'userlist');
+      else if (sidebarOpen)
+        openPanel(null);
+    }
+  }, { passive: true });
+}
+
 $('send-btn').addEventListener('click', sendInput);
 input.addEventListener('keydown', e => {
   if (e.key === 'Enter') { sendInput(); tabComplete.reset(); inputHistory.reset(); }
