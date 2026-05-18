@@ -5,6 +5,7 @@
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Go](https://img.shields.io/badge/go-1.21%2B-00ADD8)
 ![Self-hosted](https://img.shields.io/badge/self--hosted-yes-green)
+[![Go Report Card](https://goreportcard.com/badge/github.com/cstroie/wirgloo)](https://goreportcard.com/report/github.com/cstroie/wirgloo)
 
 `scp` the binary to any server, run it, and IRC from any browser — no Node.js, no Docker, no build pipeline, no database. One process, one port.
 
