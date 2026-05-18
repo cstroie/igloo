@@ -16,9 +16,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gorilla/websocket"
 	"github.com/cstroie/wirgloo/logger"
 	"github.com/cstroie/wirgloo/session"
+	"github.com/gorilla/websocket"
 )
 
 // upgrader promotes HTTP connections to WebSocket. CheckOrigin validates that
